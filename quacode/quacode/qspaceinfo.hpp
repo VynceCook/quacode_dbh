@@ -640,19 +640,23 @@ namespace Gecode {
 
   forceinline void
   QSpaceInfo::strategySuccess(void) {
+    SIBus::instance().sendSuccess();
   }
 
   forceinline void
   QSpaceInfo::strategyFailed(void) {
+    SIBus::instance().sendGlobalFailure();
   }
 
   forceinline void
   QSpaceInfo::scenarioSuccess(void) {
+    eventNewInstance();
     if (bRecordStrategy) sharedInfo.scenarioSuccess(*this);
   }
 
   forceinline void
   QSpaceInfo::scenarioFailed(void) {
+    SIBus::instance().sendFailure();
     if (bRecordStrategy) sharedInfo.scenarioFailed();
   }
 
@@ -663,6 +667,10 @@ namespace Gecode {
                                  std::ostream& ) {
     const QSpaceInfo& qsi = dynamic_cast<const QSpaceInfo&>(home);
     if (qsi.bRecordStrategy) const_cast<QSpaceInfo&>(qsi).sharedInfo.scenarioChoice(bh.id(),pos,x.min(),x.max());
+    if (x.assigned())
+      SIBus::instance().sendChoice(qsi.sharedInfo.brancherOffset(bh.id()) + pos,TVal(x.val()));
+    else
+      SIBus::instance().sendChoice(qsi.sharedInfo.brancherOffset(bh.id()) + pos,TVal(x.min(),x.max()));
   }
 
   template<> forceinline
@@ -690,6 +698,10 @@ namespace Gecode {
                                  std::ostream& os) {
     const QSpaceInfo& qsi = dynamic_cast<const QSpaceInfo&>(home);
     if (qsi.bRecordStrategy) const_cast<QSpaceInfo&>(qsi).sharedInfo.scenarioChoice(bh.id(),pos,x.min(),x.max());
+    if (x.assigned())
+      SIBus::instance().sendChoice(qsi.sharedInfo.brancherOffset(bh.id()) + pos,TVal(x.val()));
+    else
+      SIBus::instance().sendChoice(qsi.sharedInfo.brancherOffset(bh.id()) + pos,TVal(x.min(),x.max()));
     runCustomChoice(home,bh,alt,x,pos,val,os);
   }
 

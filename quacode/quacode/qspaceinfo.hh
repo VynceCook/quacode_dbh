@@ -39,6 +39,7 @@
 #include <iomanip>
 #include <quacode/qcsp.hh>
 #include <vector>
+#include <sibus/receivers/receiver-gecode.hh>
 
 namespace Gecode {
   // Forward declaration
@@ -590,6 +591,10 @@ namespace Gecode {
     /// Branch over integer variables \a x, quantified variable selection \a vars and value selection \a vals
     template <class BranchType> std::vector<BrancherHandle> branch(Home home, const IntVarArgs& x, BranchType vars, IntValBranch vals, IntBranchFilter bf=NULL, IntVarValPrint vvp=NULL);
 
+    /// Branch over integer variable \a x, quantified variable selection \a vars. This function must be used with a Gecode Receiver (for SIBus)
+    std::vector<BrancherHandle> branch(Home home, ReceiverGecode& receiver, const IntVar& x, IntVarBranch vars, IntBranchFilter bf=NULL);
+    /// Branch over integer variables \a x, quantified variable selection \a vars. This function must be used with a Gecode Receiver (for SIBus)
+    std::vector<BrancherHandle> branch(Home home, ReceiverGecode& receiver, const IntVarArgs& x, IntVarBranch vars, IntBranchFilter bf=NULL);
   };
 }
 
