@@ -220,6 +220,40 @@ namespace Gecode { namespace Int { namespace Branch {
     return sizeof(*this);
   }
 
+  forceinline
+  QPosValuesOrderChoice::QPosValuesOrderChoice(const Brancher& b, const Pos& p, const std::vector<unsigned int>& _parseOrder, IntView x)
+    : PosValuesChoice(b,p,x), parseOrder(_parseOrder)
+  {
+    assert( this->alternatives() == parseOrder.size() );
+  }
+
+  forceinline
+  QPosValuesOrderChoice::QPosValuesOrderChoice(const Brancher& b, unsigned int a, Pos p,
+                                               Archive& e)
+    : PosValuesChoice(b,a,p,e) {
+    int dpoSize = 0;
+    e >> dpoSize;
+    parseOrder.resize(dpoSize);
+    for (int i=0; i < dpoSize; i++) e >> parseOrder[i];
+  }
+
+  forceinline size_t
+  QPosValuesOrderChoice::size(void) const {
+    return PosValuesChoice::size() + sizeof(QPosValuesOrderChoice) - sizeof(PosValuesChoice);
+  }
+
+  forceinline
+  QPosValuesOrderChoice::~QPosValuesOrderChoice(void) {
+  }
+
+  forceinline void
+  QPosValuesOrderChoice::archive(Archive& e) const {
+    PosValuesChoice::archive(e);
+    int dpoSize = (int)parseOrder.size();
+    e << dpoSize;
+    for (int i=0; i < dpoSize; i++) e << parseOrder[i];
+  }
+
 }}}
 
 // STATISTICS: int-branch

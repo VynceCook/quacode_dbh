@@ -600,5 +600,6 @@ namespace Gecode {
 
 #include <quacode/qspaceinfo.hpp>
 #include <quacode/qint/watch.hpp>
+#include <quacode/qint/branch/view-values.hpp>
 
 #endif
