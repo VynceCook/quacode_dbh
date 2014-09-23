@@ -390,7 +390,12 @@ namespace Gecode {
       ViewSel<IntView>* vs[1] = {
         Branch::viewselint(home,vars)
       };
-      BrancherHandle bh = Branch::QViewValuesOrderBrancher<1,true>::post(home,receiver,xv,sharedInfo.brancherOffset(sharedInfo.getLastBrancherId()),vs,bf,&doubleChoice);
+      int lastBrancherId = sharedInfo.getLastBrancherId();
+      BrancherHandle bh;
+      if (lastBrancherId == 0)
+        bh = Branch::QViewValuesOrderBrancher<1,true>::post(home,receiver,xv,0,vs,bf,&doubleChoice);
+      else
+        bh = Branch::QViewValuesOrderBrancher<1,true>::post(home,receiver,xv,sharedInfo.brancherOffset(lastBrancherId),vs,bf,&doubleChoice);
 
       // Update shared info
       updateQSpaceInfo(bh,curQ,UW_X);
