@@ -184,7 +184,7 @@ int main(int argc, char* argv[])
   ProcessNodeCount pNodeCount;
 
   SIBus::create();
-//  SIBus::instance().addReceiver(pStdout);
+  SIBus::instance().addReceiver(pStdout);
   SIBus::instance().addReceiver(pNodeCount);
 
   BakerOptions opt("Baker Problem",0);
