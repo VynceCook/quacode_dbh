@@ -67,7 +67,7 @@ IF(GECODE_AUDIT)
 ELSE()
   SET(QUACODE_AUDIT FALSE)
 ENDIF()
-SET(LOG_AUDIT ${QUACODE_AUDIT} CACHE BOOL "Set to true to generate log output in parallel qcsp algorithm")
+SET(LOG_AUDIT ${QUACODE_AUDIT} CACHE BOOL "Set to true to generate log output.")
 
 # determine, whether we want a static binary
 SET(STATIC_LINKING FALSE CACHE BOOL "Build a static binary?")
@@ -152,8 +152,6 @@ ELSE (NOT GECODE_FOUND)
     quacode/qint/qbool/eqv.cpp
     quacode/qint/qbool/qbool.cpp
     ${GECODE_SRC}/gecode/search/meta/nogoods.cpp
-    ${GECODE_SRC}/gecode/search/parallel/engine.cpp
-    ${GECODE_SRC}/gecode/search/parallel/path.cpp
   )
   SET(QUACODE_EXAMPLES_SRCS
     examples/qbf.cpp
@@ -169,9 +167,7 @@ ELSE (NOT GECODE_FOUND)
   SET_SOURCE_FILES_PROPERTIES(${ALL_HEADERS} PROPERTIES HEADER_FILE_ONLY TRUE)
   SET_SOURCE_FILES_PROPERTIES(${ALL_HPP} PROPERTIES HEADER_FILE_ONLY TRUE)
 
-  SET(EXTRA_SRCS "")
-
-  ADD_LIBRARY(quacode ${QUACODE_SRCS} ${EXTRA_SRCS} ${QUACODE_HEADERS} ${QUACODE_HPP})
+  ADD_LIBRARY(quacode ${QUACODE_SRCS} ${QUACODE_HEADERS} ${QUACODE_HPP})
   SET_TARGET_PROPERTIES(quacode PROPERTIES DEFINE_SYMBOL "GECODE_BUILD_QUACODE")
   SET(QUACODE_LIBRARIES "")
   IF (BUILD_SHARED_LIBS)
