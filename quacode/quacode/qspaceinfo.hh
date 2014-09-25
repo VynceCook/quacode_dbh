@@ -191,9 +191,9 @@ namespace Gecode {
     // Add new variable to the strategy
     void add(unsigned int id, unsigned int size);
     // Build vector of boxes, assumes that modeling is ended
-    virtual bool strategyInit();
+    QUACODE_EXPORT virtual bool strategyInit();
     /// Clear all data of the current strategy (used when search algorithm resets as well)
-    virtual void strategyReset();
+    QUACODE_EXPORT virtual void strategyReset();
 
     // Return current depth of strategy
     int depth(void) const { return curDepth; }
@@ -211,7 +211,7 @@ namespace Gecode {
     virtual void scenarioChoice(int vId, int vInf, int vSup);
 
     // Print current strategy
-    virtual void print(std::ostream& os) const;
+    QUACODE_EXPORT virtual void print(std::ostream& os) const;
   };
 
   // This is an expanded strategy. It is based on a static strategy where all choices
@@ -236,7 +236,7 @@ namespace Gecode {
     virtual StaticExpandStrategy* copy(void) const { return new StaticExpandStrategy(*this); }
 
     // Build vector of boxes, assumes that modeling is ended
-    virtual bool strategyInit();
+    QUACODE_EXPORT virtual bool strategyInit();
 
     /// Called when a failed scenario was found
     virtual void scenarioFailed();
@@ -287,9 +287,9 @@ namespace Gecode {
     virtual DynamicStrategy* copy(void) const { return new DynamicStrategy(*this); }
 
     // Build vector of boxes, assumes that modeling is ended
-    virtual bool strategyInit();
+    QUACODE_EXPORT virtual bool strategyInit();
     /// Clear all data of the current strategy (used when search algorithm resets as well)
-    virtual void strategyReset();
+    QUACODE_EXPORT virtual void strategyReset();
 
     /// Called when a failed scenario was found
     virtual void scenarioFailed();
@@ -300,7 +300,7 @@ namespace Gecode {
     virtual void scenarioChoice(int vId, int vInf, int vSup);
 
     // Print current strategy
-    virtual void print(std::ostream& os) const;
+    QUACODE_EXPORT virtual void print(std::ostream& os) const;
 
     // Static function to convert strategy object
     static DynamicStrategy* fromStaticStrategy(const Strategy& ds);
@@ -330,7 +330,7 @@ namespace Gecode {
     virtual DynamicExpandStrategy* copy(void) const { return new DynamicExpandStrategy(*this); }
 
     // Build vector of boxes, assumes that modeling is ended
-    virtual bool strategyInit();
+    QUACODE_EXPORT virtual bool strategyInit();
 
     /// Called when a failed scenario was found
     virtual void scenarioFailed();
@@ -519,18 +519,18 @@ namespace Gecode {
 
     /// Update QSpace with data from brancher handle \a bh which contains variables \a x quantified with
     /// quantifier \a _q. It will also update data shared by all clones.
-    void updateQSpaceInfo(const BrancherHandle& bh, TQuantifier _q, const IntVarArgs& x);
-    void updateQSpaceInfo(const BrancherHandle& bh, TQuantifier _q, const BoolVarArgs& x);
+    QUACODE_EXPORT void updateQSpaceInfo(const BrancherHandle& bh, TQuantifier _q, const IntVarArgs& x);
+    QUACODE_EXPORT void updateQSpaceInfo(const BrancherHandle& bh, TQuantifier _q, const BoolVarArgs& x);
   private:
     /// Copy Constructor (disabled)
     QSpaceInfo(const QSpaceInfo& qs);
   public:
     /// Default constructor
-    QSpaceInfo(void);
+    QUACODE_EXPORT QSpaceInfo(void);
     /// Default destructor
-    ~QSpaceInfo(void);
+    QUACODE_EXPORT ~QSpaceInfo(void);
     /// Copy Constructor
-    QSpaceInfo(Space& home, bool share, QSpaceInfo& qs);
+    QUACODE_EXPORT QSpaceInfo(Space& home, bool share, QSpaceInfo& qs);
 
     /// Return the quantifier used for the brancher \a id
     TQuantifier brancherQuantifier(unsigned int id) const;
@@ -589,18 +589,18 @@ namespace Gecode {
     template <class VarType> static void tripleChoice(const Space &home, const BrancherHandle& bh, unsigned int alt, VarType x, int pos, const int& val, std::ostream& os);
 
     /// Branch over boolean variable \a x, quantified variable selection \a vars and value selection \a vals
-    template <class BranchType> std::vector<BrancherHandle> branch(Home home, const BoolVar& x, BranchType vars, IntValBranch vals, BoolBranchFilter bf=NULL, BoolVarValPrint vvp=NULL);
+    template <class BranchType> QUACODE_EXPORT std::vector<BrancherHandle> branch(Home home, const BoolVar& x, BranchType vars, IntValBranch vals, BoolBranchFilter bf=NULL, BoolVarValPrint vvp=NULL);
     /// Branch over boolean variables \a x, quantified variable selection \a vars and value selection \a vals
-    template <class BranchType> std::vector<BrancherHandle> branch(Home home, const BoolVarArgs& x, BranchType vars, IntValBranch vals, BoolBranchFilter bf=NULL, BoolVarValPrint vvp=NULL);
+    template <class BranchType> QUACODE_EXPORT std::vector<BrancherHandle> branch(Home home, const BoolVarArgs& x, BranchType vars, IntValBranch vals, BoolBranchFilter bf=NULL, BoolVarValPrint vvp=NULL);
     /// Branch over integer variable \a x, quantified variable selection \a vars and value selection \a vals
-    template <class BranchType> std::vector<BrancherHandle> branch(Home home, const IntVar& x, BranchType vars, IntValBranch vals, IntBranchFilter bf=NULL, IntVarValPrint vvp=NULL);
+    template <class BranchType> QUACODE_EXPORT std::vector<BrancherHandle> branch(Home home, const IntVar& x, BranchType vars, IntValBranch vals, IntBranchFilter bf=NULL, IntVarValPrint vvp=NULL);
     /// Branch over integer variables \a x, quantified variable selection \a vars and value selection \a vals
-    template <class BranchType> std::vector<BrancherHandle> branch(Home home, const IntVarArgs& x, BranchType vars, IntValBranch vals, IntBranchFilter bf=NULL, IntVarValPrint vvp=NULL);
+    template <class BranchType> QUACODE_EXPORT std::vector<BrancherHandle> branch(Home home, const IntVarArgs& x, BranchType vars, IntValBranch vals, IntBranchFilter bf=NULL, IntVarValPrint vvp=NULL);
 
     /// Branch over integer variable \a x, quantified variable selection \a vars. This function must be used with a Gecode Receiver (for SIBus)
-    std::vector<BrancherHandle> branch(Home home, ReceiverGecode& receiver, const IntVar& x, IntVarBranch vars, IntBranchFilter bf=NULL);
+    QUACODE_EXPORT std::vector<BrancherHandle> branch(Home home, ReceiverGecode& receiver, const IntVar& x, IntVarBranch vars, IntBranchFilter bf=NULL);
     /// Branch over integer variables \a x, quantified variable selection \a vars. This function must be used with a Gecode Receiver (for SIBus)
-    std::vector<BrancherHandle> branch(Home home, ReceiverGecode& receiver, const IntVarArgs& x, IntVarBranch vars, IntBranchFilter bf=NULL);
+    QUACODE_EXPORT std::vector<BrancherHandle> branch(Home home, ReceiverGecode& receiver, const IntVarArgs& x, IntVarBranch vars, IntBranchFilter bf=NULL);
   };
 }
 

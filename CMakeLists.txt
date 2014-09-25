@@ -69,10 +69,14 @@ ELSE()
 ENDIF()
 SET(LOG_AUDIT ${SIBUS_AUDIT} CACHE BOOL "Set to true to generate log output in parallel qcsp algorithm")
 
-# determine, whether we want a static binary
-SET(STATIC_LINKING FALSE CACHE BOOL "Build a static binary?")
-# do we want static libraries?
-IF(STATIC_LINKING)
+IF(UNIX)
+  # determine, whether we want a static binary
+  SET(STATIC_LINKING FALSE CACHE BOOL "Build a static binary?")
+  # do we want static libraries?
+  IF(STATIC_LINKING)
+    SET(BUILD_SHARED_LIBS OFF)
+    # To know in source file that we compil static
+    ADD_DEFINITIONS(-DQUACODE_STATIC_LIBS)
     # When STATIC_LINKING is TRUE, than cmake looks for libraries ending
     # with .a. This is for linux only!
     SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
@@ -83,7 +87,12 @@ IF(STATIC_LINKING)
     # Use static libs for Boost
     SET(Boost_USE_STATIC_LIBS ON)
     SET(Boost_USE_STATIC_RUNTIME ON)
-ENDIF(STATIC_LINKING)
+  ELSE(STATIC_LINKING)
+    SET(BUILD_SHARED_LIBS ON)
+  ENDIF(STATIC_LINKING)
+ELSE(UNIX)
+  SET(BUILD_SHARED_LIBS ON)
+ENDIF(UNIX)
 
 INCLUDE(CheckCXXCompilerFlag)
 SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_MODULE_PATH})
@@ -114,17 +123,13 @@ IF (CMAKE_COMPILER_IS_GNUCXX)
   SET(CMAKE_CXX_FLAGS_DEBUG "-ggdb")
 ENDIF ()
 
+FIND_PACKAGE(Threads)
+
 check_cxx_compiler_flag(-fvisibility=hidden HAVE_VISIBILITY_HIDDEN_FLAG)
 IF (HAVE_VISIBILITY_HIDDEN_FLAG)
   SET(GECODE_GCC_HAS_CLASS_VISIBILITY "/**/")
   ADD_DEFINITIONS(-fvisibility=hidden)
 ENDIF()
-
-IF (WIN32)
-  SET(GECODE_THREADS_WINDOWS 1)
-ELSE ()
-  SET(GECODE_THREADS_PTHREADS 1)
-ENDIF ()
 
 IF (LOG_AUDIT)
   ADD_DEFINITIONS(-DLOG_AUDIT)
@@ -180,7 +185,6 @@ SET_SOURCE_FILES_PROPERTIES(${ALL_HPP} PROPERTIES HEADER_FILE_ONLY TRUE)
 
 SET(SIBUS_LIBS "")
 IF (SIBUS_THREAD)
-  FIND_PACKAGE(Threads)
   IF(NOT Threads_FOUND)
     MESSAGE(FATAL_ERROR "Thread (pthread) library are needed, consider to install them or disable SIBus threads.")
   ELSE()
@@ -196,20 +200,12 @@ IF (SIBUS_THREAD)
       INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIRS} )
       ADD_DEFINITIONS(-DSIBUS_THREAD)
       ADD_LIBRARY(sibus ${SIBUS_SRCS} ${SIBUS_SRCS_NEED_THREADS} ${SIBUS_HEADERS} ${SIBUS_HEADERS_NEED_THREADS} ${SIBUS_HPP})
-      IF (BUILD_SHARED_LIBS)
-        SET(SIBUS_LIBS -L${CMAKE_CURRENT_BINARY_DIR} -lsibus ${Boost_SYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
-      ELSE()
-        SET(SIBUS_LIBS sibus ${Boost_SYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
-      ENDIF()
+      SET(SIBUS_LIBS sibus ${Boost_SYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
     ENDIF()
   ENDIF()
 ELSE()
   ADD_LIBRARY(sibus ${SIBUS_SRCS} ${SIBUS_HEADERS} ${SIBUS_HPP})
-  IF (BUILD_SHARED_LIBS)
-    SET(SIBUS_LIBS -L${CMAKE_CURRENT_BINARY_DIR} -lsibus)
-  ELSE()
-    SET(SIBUS_LIBS sibus)
-  ENDIF()
+  SET(SIBUS_LIBS sibus)
 ENDIF ()
 SET_TARGET_PROPERTIES (sibus PROPERTIES DEFINE_SYMBOL  "BUILD_SIBUS")
 IF (HAVE_VISIBILITY_HIDDEN_FLAG)
@@ -220,7 +216,7 @@ ENDIF ()
 FOREACH (example ${SIBUS_EXAMPLES_SRCS})
   GET_FILENAME_COMPONENT(exampleBin ${example} NAME_WE)
   ADD_EXECUTABLE(${exampleBin} ${example})
-  TARGET_LINK_LIBRARIES(${exampleBin} ${QUACODE_LIBRARIES} ${SIBUS_LIBS} ${GECODE_LIBRARIES} pthread)
+  TARGET_LINK_LIBRARIES(${exampleBin} ${QUACODE_LIBRARIES} ${SIBUS_LIBS} ${GECODE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
   # set -static, when STATIC_LINKING is TRUE and set LINK_SEARCH_END_STATIC
   # to remove the additional -bdynamic from the linker line.
@@ -240,14 +236,14 @@ IF (SIBUS_THREAD)
   FOREACH (example ${SIBUS_EXAMPLES_SRCS_NEED_THREADS})
     GET_FILENAME_COMPONENT(exampleBin ${example} NAME_WE)
     ADD_EXECUTABLE(${exampleBin} ${example})
-    TARGET_LINK_LIBRARIES(${exampleBin} ${QUACODE_LIBRARIES} ${SIBUS_LIBS} ${GECODE_LIBRARIES} pthread)
+    TARGET_LINK_LIBRARIES(${exampleBin} ${QUACODE_LIBRARIES} ${SIBUS_LIBS} ${GECODE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
     # set -static, when STATIC_LINKING is TRUE and set LINK_SEARCH_END_STATIC
     # to remove the additional -Bdynamic from the linker line.
-    IF(STATIC_LINKING)
+    IF(UNIX AND STATIC_LINKING)
         SET(CMAKE_EXE_LINKER_FLAGS "-static")
         SET_TARGET_PROPERTIES(${exampleBin} PROPERTIES LINK_SEARCH_END_STATIC 1)
-    ENDIF(STATIC_LINKING)
+    ENDIF(UNIX AND STATIC_LINKING)
 
     IF (BUILD_SHARED_LIBS)
       ADD_DEPENDENCIES(${exampleBin} quacode)
