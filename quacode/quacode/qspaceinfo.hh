@@ -415,6 +415,8 @@ namespace Gecode {
       void add(const QSpaceInfo& qsi, const BrancherHandle& bh, TQuantifier _q, const IntVarArgs& x);
       /// Return the quantifier used for the brancher \a bh
       forceinline TQuantifier brancherQuantifier(unsigned int id) const { return v[id-1].quantifier; }
+      /// Return the size used for the brancher \a bh
+      forceinline unsigned int brancherSize(const unsigned int id) const { return v[id-1].size; }
       /// Return the offset computed when the brancher \a bh was added
       forceinline unsigned int brancherOffset(const unsigned int id) const { return v[id-1].offset; }
       // Return the last id of brancher stored in Shared Info.
@@ -455,6 +457,8 @@ namespace Gecode {
         /// SharedInfo access
         /// Return the quantifier used for the brancher \a id
         TQuantifier brancherQuantifier(unsigned int id) const;
+        /// Return the size computed when the brancher \a id was added
+        unsigned int brancherSize(unsigned int id) const;
         /// Return the offset computed when the brancher \a id was added
         unsigned int brancherOffset(unsigned int id) const;
         /// Initialize data structures of strategy, may return another method if strategy can't be allocated with given method
