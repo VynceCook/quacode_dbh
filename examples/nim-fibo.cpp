@@ -204,7 +204,7 @@ int main(int argc, char* argv[])
   ProcessNodeCount pNodeCount;
 
   SIBus::create();
-//  SIBus::instance().addReceiver(pStdout);
+  SIBus::instance().addReceiver(pStdout);
   SIBus::instance().addReceiver(pNodeCount);
 
   NimFiboOptions opt("QCSP Nim-Fibo",3);

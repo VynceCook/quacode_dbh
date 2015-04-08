@@ -168,6 +168,7 @@ SET(SIBUS_EXAMPLES_SRCS
   examples/connect-four.cpp
   examples/baker.cpp
   examples/speeddating.cpp
+  examples/rndQCSP.cpp
 )
 IF (DISJUNCTION)
   SET(SIBUS_EXAMPLES_SRCS ${SIBUS_EXAMPLES_SRCS} examples/disjunction.cpp)
