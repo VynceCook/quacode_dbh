@@ -177,7 +177,7 @@ class ConnectFourAllState : public Script, public QSpaceInfo {
   const ConnectFourOptions& opt;
 
 public:
-  ConnectFourAllState(const ConnectFourOptions& _opt) : Script(), QSpaceInfo(), opt(_opt)
+  ConnectFourAllState(const ConnectFourOptions& _opt) : Script(_opt), QSpaceInfo(), opt(_opt)
   {
     // DEBUT DESCRIPTION PB
     std::cout << "Loading problem" << std::endl;

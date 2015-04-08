@@ -289,8 +289,8 @@ namespace Gecode {
     object(new QSpaceSharedInfoO(sm));
   }
 
-  QSpaceInfo::QSpaceInfo(void)
-    : bRecordStrategy(false),
+  QSpaceInfo::QSpaceInfo(AsyncAlgo& _aAlgo)
+    :  aAlgo(_aAlgo), bRecordStrategy(false),
       curStrategyMethod(StrategyMethodValues::BUILD
 //                        | StrategyMethodValues::DYNAMIC
                         | StrategyMethodValues::FAILTHROUGH
@@ -303,7 +303,7 @@ namespace Gecode {
   QSpaceInfo::~QSpaceInfo(void) { }
 
   QSpaceInfo::QSpaceInfo(Space& home, bool share, QSpaceInfo& qs)
-    : bRecordStrategy(qs.bRecordStrategy),
+    : aAlgo(qs.aAlgo), bRecordStrategy(qs.bRecordStrategy),
       curStrategyMethod(qs.curStrategyMethod),
       nbWatchConstraint(qs.nbWatchConstraint) {
       sharedInfo.update(home, share, qs.sharedInfo);
@@ -469,4 +469,64 @@ namespace Gecode {
   template QUACODE_EXPORT std::vector<BrancherHandle> QSpaceInfo::branch<>(Home home, const IntVarArgs& x, IntVarBranch vars, IntValBranch vals, IntBranchFilter bf, IntVarValPrint vvp);
   template QUACODE_EXPORT std::vector<BrancherHandle> QSpaceInfo::branch<>(Home home, const IntVarArgs& x, TieBreak<IntVarBranch> vars, IntValBranch vals, IntBranchFilter bf, IntVarValPrint vvp);
 
+  std::vector<BrancherHandle>
+  QSpaceInfo::branch(Home home, AsyncAlgo& aAlgo, const IntVar& x, IntVarBranch vars, IntBranchFilter bf) {
+    IntVarArgs vaX;
+    vaX << x;
+    return branch(home,aAlgo,vaX,vars,bf);
+  }
+
+  std::vector<BrancherHandle>
+  QSpaceInfo::branch(Home home, AsyncAlgo& aAlgo, const IntVarArgs& x, IntVarBranch vars, IntBranchFilter bf) {
+    std::vector<BrancherHandle> result;
+    assert(x.size() > 0);
+    if (home.failed()) return result;
+
+    // Get the quantifier of the first variable of the quantifier
+    TQuantifier curQ = EXISTS;
+    if (unWatched(x[0])) curQ = FORALL;
+    int i = 0;
+    // We iterate over blocks of variables with the same quantifier
+    while (i < x.size()) {
+      IntVarArgs UW_X;
+      IntVar* uwxi = NULL;
+      TQuantifier qi = EXISTS;
+
+      while (i < x.size())
+      {
+        uwxi = unWatched(x[i]);
+        qi = (uwxi?FORALL:EXISTS);
+
+        if (qi != curQ) break; // End of current block go branching
+        if (qi == EXISTS)
+          UW_X << x[i];
+        else
+          UW_X << *uwxi;
+
+        i++;
+      }
+
+      // Add brancher for unwatched variables
+      using namespace Int;
+      vars.expand(home,UW_X);
+      ViewArray<IntView> xv(home,UW_X);
+      ViewSel<IntView>* vs[1] = {
+        Branch::viewselint(home,vars)
+      };
+      int lastBrancherId = sharedInfo.getLastBrancherId();
+      int offSet = 0;
+      if (lastBrancherId) offSet = sharedInfo.brancherOffset(lastBrancherId) + sharedInfo.brancherSize(lastBrancherId);
+      BrancherHandle bh = Branch::QViewValuesOrderBrancher<1,true>::post(home,aAlgo,xv,offSet,vs,bf,&doubleChoice);
+
+      // Update shared info
+      updateQSpaceInfo(bh,curQ,UW_X);
+
+      result.push_back(bh);
+
+      // Update current quantifier
+      curQ = qi;
+    }
+
+    return result;
+  }
 }

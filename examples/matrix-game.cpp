@@ -107,7 +107,7 @@ class QCSPMatrixGame : public Script, public QSpaceInfo {
 
 public:
 
-  QCSPMatrixGame(const MatrixGameOptions& opt) : Script(), QSpaceInfo()
+  QCSPMatrixGame(const MatrixGameOptions& opt) : Script(opt), QSpaceInfo()
   {
     // DEBUT DESCRIPTION PB
     std::cout << "Loading problem" << std::endl;

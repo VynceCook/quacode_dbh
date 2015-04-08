@@ -112,7 +112,7 @@ public:
 class QBFProblem : public Script, public QSpaceInfo {
   BoolVarArray X;
 public:
-  QBFProblem(const QBFOptions& opt) : Script(), QSpaceInfo()
+  QBFProblem(const QBFOptions& opt) : Script(opt), QSpaceInfo()
   {
     // DEBUT DESCRIPTION PB
     std::cout << "Loading problem" << std::endl;

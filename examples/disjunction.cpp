@@ -569,7 +569,7 @@ class QCSPNimFibo : public Script, public QSpaceInfo {
   IntVarArray X;
 
 public:
-  QCSPNimFibo(const DisjunctionOptions& opt) : Script(), QSpaceInfo()
+  QCSPNimFibo(const DisjunctionOptions& opt) : Script(opt), QSpaceInfo()
   {
     // DEBUT DESCRIPTION PB
     std::cout << "Loading problem NimFibo" << std::endl;
@@ -699,7 +699,7 @@ class AntiChain : public Script {
   IntVarArray X;
 
 public:
-  AntiChain(const DisjunctionOptions& opt) : Script()
+  AntiChain(const DisjunctionOptions& opt) : Script(opt)
   {
     // DEBUT DESCRIPTION PB
     std::cout << "Loading problem AntiChain" << std::endl;

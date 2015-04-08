@@ -587,6 +587,11 @@ namespace Gecode {
   }
 
   forceinline unsigned int
+  QSpaceInfo::QSpaceSharedInfo::brancherSize(unsigned int id) const {
+    return static_cast<QSpaceSharedInfoO*>(object())->brancherSize(id);
+  }
+
+  forceinline unsigned int
   QSpaceInfo::QSpaceSharedInfo::brancherOffset(unsigned int id) const {
     return static_cast<QSpaceSharedInfoO*>(object())->brancherOffset(id);
   }
@@ -645,19 +650,23 @@ namespace Gecode {
 
   forceinline void
   QSpaceInfo::strategySuccess(void) {
+    aAlgo.strategyFound();
   }
 
   forceinline void
   QSpaceInfo::strategyFailed(void) {
+    aAlgo.globalFailure();
   }
 
   forceinline void
   QSpaceInfo::scenarioSuccess(void) {
+    eventNewInstance();
     if (bRecordStrategy) sharedInfo.scenarioSuccess(*this);
   }
 
   forceinline void
   QSpaceInfo::scenarioFailed(void) {
+    aAlgo.newFailure();
     if (bRecordStrategy) sharedInfo.scenarioFailed();
   }
 
@@ -668,6 +677,10 @@ namespace Gecode {
                                  std::ostream& ) {
     const QSpaceInfo& qsi = dynamic_cast<const QSpaceInfo&>(home);
     if (qsi.bRecordStrategy) const_cast<QSpaceInfo&>(qsi).sharedInfo.scenarioChoice(bh.id(),pos,x.min(),x.max());
+    if (x.assigned())
+      qsi.aAlgo.newChoice(qsi.sharedInfo.brancherOffset(bh.id()) + pos,TVal(x.val()));
+    else
+      qsi.aAlgo.newChoice(qsi.sharedInfo.brancherOffset(bh.id()) + pos,TVal(x.min(),x.max()));
   }
 
   template<> forceinline
@@ -695,6 +708,10 @@ namespace Gecode {
                                  std::ostream& os) {
     const QSpaceInfo& qsi = dynamic_cast<const QSpaceInfo&>(home);
     if (qsi.bRecordStrategy) const_cast<QSpaceInfo&>(qsi).sharedInfo.scenarioChoice(bh.id(),pos,x.min(),x.max());
+    if (x.assigned())
+      qsi.aAlgo.newChoice(qsi.sharedInfo.brancherOffset(bh.id()) + pos,TVal(x.val()));
+    else
+      qsi.aAlgo.newChoice(qsi.sharedInfo.brancherOffset(bh.id()) + pos,TVal(x.min(),x.max()));
     runCustomChoice(home,bh,alt,x,pos,val,os);
   }
 

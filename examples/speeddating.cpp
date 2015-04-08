@@ -104,7 +104,7 @@ class QCSPSpeedDating : public Script, public QSpaceInfo {
   int nbMaxSlots;
 
 public:
-  QCSPSpeedDating(const SpeedDatingOptions& opt) : Script(), QSpaceInfo()
+  QCSPSpeedDating(const SpeedDatingOptions& opt) : Script(opt), QSpaceInfo()
   {
     debug = IntVarArray(*this,10,-1,100);
     nbMen = opt._nbM.value();

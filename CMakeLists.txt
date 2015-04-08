@@ -47,27 +47,28 @@ ELSE()
   # Check if Gecode is configured with --enable-debug
   FILE(STRINGS ${GECODE_BIN}/config.status GECODE_DEBUG_BUILD REGEX "S\\[\"DEBUG_BUILD\"\\]=")
   IF(GECODE_DEBUG_BUILD MATCHES "yes")
-    SET(SIBUS_BUILD_TYPE "Debug")
+      SET(CALLBACK_BUILD_TYPE "Debug")
   ELSE()
-    SET(SIBUS_BUILD_TYPE "Release")
+      SET(CALLBACK_BUILD_TYPE "Release")
   ENDIF()
 
-  SET(CMAKE_BUILD_TYPE "${SIBUS_BUILD_TYPE}" CACHE STRING "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel.")
+  SET(CMAKE_BUILD_TYPE "${CALLBACK_BUILD_TYPE}" CACHE STRING "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel.")
 ENDIF()
 
-PROJECT(SIBus)
+PROJECT(QuacodeCallback)
+SET(CMAKE_CXX_FLAGS "-std=c++0x")
 
 SET(CMAKE_VERBOSE_MAKEFILE TRUE)
-SET(SIBUS_THREAD FALSE CACHE BOOL "Set to true to use thread in SIBus.")
+SET(USE_THREAD FALSE CACHE BOOL "Set to true to use threads.")
 
 # Check if Gecode is configured with --enable-audit
 FILE(STRINGS ${GECODE_BIN}/config.status GECODE_AUDIT REGEX "D\\[\"GECODE_AUDIT\"\\]=")
 IF(GECODE_AUDIT)
-  SET(SIBUS_AUDIT TRUE)
+    SET(CALLBACK_AUDIT TRUE)
 ELSE()
-  SET(SIBUS_AUDIT FALSE)
+    SET(CALLBACK_AUDIT FALSE)
 ENDIF()
-SET(LOG_AUDIT ${SIBUS_AUDIT} CACHE BOOL "Set to true to generate log output in parallel qcsp algorithm")
+SET(LOG_AUDIT ${CALLBACK_AUDIT} CACHE BOOL "Set to true to generate log output in parallel qcsp algorithm")
 
 IF(UNIX)
   # determine, whether we want a static binary
@@ -102,9 +103,6 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
 #  OPTION(BUILD_EXAMPLES OFF BOOL)
 OPTION(BUILD_EXAMPLES "Disable Quacode examples build." OFF)
-IF (SIBUS_THREAD)
-  ADD_DEFINITIONS(-DSIBUS_THREAD)
-ENDIF()
 ADD_SUBDIRECTORY(quacode)
 GET_DIRECTORY_PROPERTY(GECODE_LIBRARIES DIRECTORY quacode DEFINITION GECODE_LIBRARIES)
 GET_DIRECTORY_PROPERTY(QUACODE_LIBRARIES DIRECTORY quacode DEFINITION QUACODE_LIBRARIES)
@@ -135,89 +133,43 @@ IF (LOG_AUDIT)
   ADD_DEFINITIONS(-DLOG_AUDIT)
 ENDIF()
 
-SET(SIBUS_HEADERS
-  sibus/sibus.hh
-  sibus/receivers/receiver-out.hh
-  sibus/receivers/receiver-gecode.hh
-  sibus/receivers/receiver-compil-certif.hh
-  sibus/receivers/receiver-nodecount.hh
+SET(CALLBACK_HEADERS
+  callback/asyncalgo.hh
 )
-SET(SIBUS_HEADERS_NEED_THREADS
-  sibus/receivers/receiver-network.hh
+SET(CALLBACK_HPP
+  callback/asyncalgo.hpp
 )
-SET(SIBUS_HPP
-  sibus/sibus.hpp
+SET(CALLBACK_SRCS
+  callback/asyncalgo.cpp
 )
-SET(SIBUS_SRCS
-  sibus/sibus.cpp
-  sibus/receivers/receiver-out.cpp
-  sibus/receivers/receiver-network.cpp
-  sibus/receivers/receiver-gecode.cpp
-  sibus/receivers/receiver-compil-certif.cpp
-  sibus/receivers/receiver-nodecount.cpp
-)
-SET(SIBUS_SRCS_NEED_THREADS
-  sibus/receivers/receiver-network.cpp
-)
-SET(SIBUS_EXAMPLES_SRCS
-  examples/sample-from-file.cpp
-  examples/qbf.cpp
-  examples/qdimacs.cpp
-  examples/nim-fibo.cpp
-  examples/matrix-game.cpp
-  examples/connect-four.cpp
+SET(CALLBACK_EXAMPLES_SRCS
   examples/baker.cpp
-  examples/speeddating.cpp
-  examples/rndQCSP.cpp
 )
+
 IF (DISJUNCTION)
-  SET(SIBUS_EXAMPLES_SRCS ${SIBUS_EXAMPLES_SRCS} examples/disjunction.cpp)
+    SET(CALLBACK_EXAMPLES_SRCS ${CALLBACK_EXAMPLES_SRCS} examples/disjunction.cpp)
 ENDIF()
 
-SET(SIBUS_EXAMPLES_SRCS_NEED_THREADS
-  examples/baker-dbh.cpp
-  examples/nim-fibo-dbh.cpp
-  examples/matrix-game-dbh.cpp
-)
 SOURCE_GROUP("Hpp Files" REGULAR_EXPRESSION ".hpp")
 
 SET_SOURCE_FILES_PROPERTIES(${ALL_HEADERS} PROPERTIES HEADER_FILE_ONLY TRUE)
 SET_SOURCE_FILES_PROPERTIES(${ALL_HPP} PROPERTIES HEADER_FILE_ONLY TRUE)
 
-SET(SIBUS_LIBS "")
-IF (SIBUS_THREAD)
+SET(CALLBACK_LIBS "")
+IF (CALLBACK_THREAD)
   IF(NOT Threads_FOUND)
-    MESSAGE(FATAL_ERROR "Thread (pthread) library are needed, consider to install them or disable SIBus threads.")
+    MESSAGE(FATAL_ERROR "Thread (pthread) library are needed, consider to install them or disable threads.")
   ELSE()
-    FIND_PACKAGE(Boost 1.49.0 COMPONENTS system thread)
-    IF(NOT Boost_FOUND)
-      MESSAGE(STATUS "Try to find local Boost libraries.")
-      SET(BOOST_LIBRARYDIR ${CMAKE_CURRENT_BINARY_DIR}/..)
-      FIND_PACKAGE(Boost 1.49.0 COMPONENTS system thread)
-    ENDIF()
-    IF(NOT Boost_FOUND)
-      MESSAGE(FATAL_ERROR "Boost thread and system library are needed, consider to install them or disable SIBus threads.")
-    ELSE()
-      INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIRS} )
-      ADD_DEFINITIONS(-DSIBUS_THREAD)
-      ADD_LIBRARY(sibus ${SIBUS_SRCS} ${SIBUS_SRCS_NEED_THREADS} ${SIBUS_HEADERS} ${SIBUS_HEADERS_NEED_THREADS} ${SIBUS_HPP})
-      SET(SIBUS_LIBS sibus ${Boost_SYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
-    ENDIF()
+    ADD_DEFINITIONS(-DUSE_THREAD)
+    SET(CALLBACK_LIBS ${CMAKE_THREAD_LIBS_INIT})
   ENDIF()
-ELSE()
-  ADD_LIBRARY(sibus ${SIBUS_SRCS} ${SIBUS_HEADERS} ${SIBUS_HPP})
-  SET(SIBUS_LIBS sibus)
-ENDIF ()
-SET_TARGET_PROPERTIES (sibus PROPERTIES DEFINE_SYMBOL  "BUILD_SIBUS")
-IF (HAVE_VISIBILITY_HIDDEN_FLAG)
-  SET_TARGET_PROPERTIES(sibus PROPERTIES COMPILE_FLAGS "-DSIBUS_GCC_HAS_CLASS_VISIBILITY")
 ENDIF ()
 
 # Add targets for examples
-FOREACH (example ${SIBUS_EXAMPLES_SRCS})
+FOREACH (example ${CALLBACK_EXAMPLES_SRCS})
   GET_FILENAME_COMPONENT(exampleBin ${example} NAME_WE)
-  ADD_EXECUTABLE(${exampleBin} ${example})
-  TARGET_LINK_LIBRARIES(${exampleBin} ${QUACODE_LIBRARIES} ${SIBUS_LIBS} ${GECODE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+  ADD_EXECUTABLE(${exampleBin} ${CALLBACK_SRCS} ${example})
+  TARGET_LINK_LIBRARIES(${exampleBin} ${QUACODE_LIBRARIES} ${GECODE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
   # set -static, when STATIC_LINKING is TRUE and set LINK_SEARCH_END_STATIC
   # to remove the additional -bdynamic from the linker line.
@@ -228,28 +180,6 @@ FOREACH (example ${SIBUS_EXAMPLES_SRCS})
 
   IF (BUILD_SHARED_LIBS)
     ADD_DEPENDENCIES(${exampleBin} quacode)
-    ADD_DEPENDENCIES(${exampleBin} sibus)
   ENDIF()
 ENDFOREACH ()
-
-# Add targets for examples which need threads
-IF (SIBUS_THREAD)
-  FOREACH (example ${SIBUS_EXAMPLES_SRCS_NEED_THREADS})
-    GET_FILENAME_COMPONENT(exampleBin ${example} NAME_WE)
-    ADD_EXECUTABLE(${exampleBin} ${example})
-    TARGET_LINK_LIBRARIES(${exampleBin} ${QUACODE_LIBRARIES} ${SIBUS_LIBS} ${GECODE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
-
-    # set -static, when STATIC_LINKING is TRUE and set LINK_SEARCH_END_STATIC
-    # to remove the additional -Bdynamic from the linker line.
-    IF(UNIX AND STATIC_LINKING)
-        SET(CMAKE_EXE_LINKER_FLAGS "-static")
-        SET_TARGET_PROPERTIES(${exampleBin} PROPERTIES LINK_SEARCH_END_STATIC 1)
-    ENDIF(UNIX AND STATIC_LINKING)
-
-    IF (BUILD_SHARED_LIBS)
-      ADD_DEPENDENCIES(${exampleBin} quacode)
-      ADD_DEPENDENCIES(${exampleBin} sibus)
-    ENDIF()
-  ENDFOREACH ()
-ENDIF()
 

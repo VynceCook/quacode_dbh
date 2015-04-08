@@ -135,7 +135,7 @@ private:
   QBoolVarArray qx;
 public:
   /// The actual problem
-  QDimacs(const QDimacsOptions& opt) : QSpaceInfo() {
+  QDimacs(const QDimacsOptions& opt) : Script(opt), QSpaceInfo() {
     parseQDIMACS(opt.filename.c_str(),opt._qConstraint.value());
   }
 

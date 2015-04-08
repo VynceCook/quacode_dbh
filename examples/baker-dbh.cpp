@@ -110,7 +110,7 @@ class QCSPBaker : public Script, public QSpaceInfo {
   IntVarArray X;
 
 public:
-  QCSPBaker(const BakerOptions& opt) : Script(), QSpaceInfo()
+  QCSPBaker(const BakerOptions& opt) : Script(opt), QSpaceInfo()
   {
     // DEBUT DESCRIPTION PB
     std::cout << "Loading problem" << std::endl;

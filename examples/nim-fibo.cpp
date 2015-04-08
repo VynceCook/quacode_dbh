@@ -117,7 +117,7 @@ class QCSPNimFibo : public Script, public QSpaceInfo {
 
 public:
 
-  QCSPNimFibo(const NimFiboOptions& opt) : Script(), QSpaceInfo()
+  QCSPNimFibo(const NimFiboOptions& opt) : Script(opt), QSpaceInfo()
   {
     // DEBUT DESCRIPTION PB
     std::cout << "Loading problem" << std::endl;

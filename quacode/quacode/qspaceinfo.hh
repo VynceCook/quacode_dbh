@@ -39,6 +39,7 @@
 #include <iomanip>
 #include <quacode/qcsp.hh>
 #include <vector>
+#include <callback/asyncalgo.hh>
 
 namespace Gecode {
   // Forward declaration
@@ -414,6 +415,8 @@ namespace Gecode {
       void add(const QSpaceInfo& qsi, const BrancherHandle& bh, TQuantifier _q, const IntVarArgs& x);
       /// Return the quantifier used for the brancher \a bh
       forceinline TQuantifier brancherQuantifier(unsigned int id) const { return v[id-1].quantifier; }
+      /// Return the size used for the brancher \a bh
+      forceinline unsigned int brancherSize(const unsigned int id) const { return v[id-1].size; }
       /// Return the offset computed when the brancher \a bh was added
       forceinline unsigned int brancherOffset(const unsigned int id) const { return v[id-1].offset; }
       // Return the last id of brancher stored in Shared Info.
@@ -454,6 +457,8 @@ namespace Gecode {
         /// SharedInfo access
         /// Return the quantifier used for the brancher \a id
         TQuantifier brancherQuantifier(unsigned int id) const;
+        /// Return the size computed when the brancher \a id was added
+        unsigned int brancherSize(unsigned int id) const;
         /// Return the offset computed when the brancher \a id was added
         unsigned int brancherOffset(unsigned int id) const;
         /// Initialize data structures of strategy, may return another method if strategy can't be allocated with given method
@@ -499,6 +504,9 @@ namespace Gecode {
     /// Shared information among all spaces
     QSpaceSharedInfo sharedInfo;
 
+    /// Reference to asynchronous algorithm which will cooperate with Quacode
+    AsyncAlgo& aAlgo;
+
     /// Boolean flag to know if we have to record the winning strategy
     bool bRecordStrategy;
     /// The current strategy method to use during search
@@ -525,7 +533,7 @@ namespace Gecode {
     QSpaceInfo(const QSpaceInfo& qs);
   public:
     /// Default constructor
-    QUACODE_EXPORT QSpaceInfo(void);
+    QUACODE_EXPORT QSpaceInfo(AsyncAlgo& _aAlgo);
     /// Default destructor
     QUACODE_EXPORT ~QSpaceInfo(void);
     /// Copy Constructor
@@ -596,10 +604,15 @@ namespace Gecode {
     /// Branch over integer variables \a x, quantified variable selection \a vars and value selection \a vals
     template <class BranchType> QUACODE_EXPORT std::vector<BrancherHandle> branch(Home home, const IntVarArgs& x, BranchType vars, IntValBranch vals, IntBranchFilter bf=NULL, IntVarValPrint vvp=NULL);
 
+    /// Branch over integer variable \a x, quantified variable selection \a vars. This function must be used with an asynchronous algorithm to cooperate with
+    QUACODE_EXPORT std::vector<BrancherHandle> branch(Home home, AsyncAlgo& aAlgo, const IntVar& x, IntVarBranch vars, IntBranchFilter bf=NULL);
+    /// Branch over integer variables \a x, quantified variable selection \a vars. This function must be used with an asynchronous algorithm to cooperate with
+    QUACODE_EXPORT std::vector<BrancherHandle> branch(Home home, AsyncAlgo& aAlgo, const IntVarArgs& x, IntVarBranch vars, IntBranchFilter bf=NULL);
   };
 }
 
 #include <quacode/qspaceinfo.hpp>
 #include <quacode/qint/watch.hpp>
+#include <quacode/qint/branch/view-values.hpp>
 
 #endif
