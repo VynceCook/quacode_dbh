@@ -34,7 +34,7 @@
  *
  */
 #include <gecode/int/branch.hh>
-#include <callback/asyncalgo.hh>
+#include <asyncalgo/asyncalgo.hh>
 #define UNUSED_STREAM std::cout
 
 namespace Gecode { namespace Int { namespace Branch {

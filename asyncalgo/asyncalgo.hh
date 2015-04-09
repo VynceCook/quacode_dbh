@@ -161,6 +161,6 @@ public:
       virtual ~AsyncAlgo();
 };
 
-#include <callback/asyncalgo.hpp>
+#include <asyncalgo/asyncalgo.hpp>
 
 #endif

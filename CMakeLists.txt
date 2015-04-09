@@ -134,13 +134,13 @@ IF (LOG_AUDIT)
 ENDIF()
 
 SET(CALLBACK_HEADERS
-  callback/asyncalgo.hh
+  asyncalgo/asyncalgo.hh
 )
 SET(CALLBACK_HPP
-  callback/asyncalgo.hpp
+  asyncalgo/asyncalgo.hpp
 )
 SET(CALLBACK_SRCS
-  callback/asyncalgo.cpp
+  asyncalgo/asyncalgo.cpp
 )
 SET(CALLBACK_EXAMPLES_SRCS
   examples/baker.cpp
