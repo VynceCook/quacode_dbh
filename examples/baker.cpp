@@ -164,9 +164,8 @@ int main(int argc, char* argv[])
     BakerOptions opt("Baker Problem",0);
     opt.parse(argc,argv);
 
-    AsyncAlgo aAlgo;
+    AsyncAlgo aAlgo(false);
     opt.aAlgo = &aAlgo;
-
     Script::run<QCSPBaker,QDFS,BakerOptions>(opt);
 
     return 0;

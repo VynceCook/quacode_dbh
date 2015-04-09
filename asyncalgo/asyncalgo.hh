@@ -35,10 +35,7 @@
 #include <string>
 #include <list>
 
-#ifdef USE_THREAD
-  #include <gecode/support/thread.hpp>
-#endif
-
+#include <gecode/support.hh>
 #include <quacode/qcsp.hh>
 
 #define TYPE_BOOL  0
@@ -94,71 +91,84 @@ struct Monom {
     std::string var;
 };
 
-class AsyncAlgo {
-private:
-//#ifdef SIBUS_THREAD
-//    // Thread
-//    boost::thread * m_thread;
-//    // Mutex for access to sibus
-//    mutable BoostMutex mx;
-//    /// Event for push data in queue
-//    mutable BoostEvent ev_fifo;
-//    // List of events to be sent to receivers
-//    mutable std::list<TLEvent> m_fifo;
-//#endif
-//
-//    // States of the SIBus (init, run, shutdown, off)
-//    static const unsigned int S_INIT     = 0;
-//    static const unsigned int S_RUN      = 1;
-//    static const unsigned int S_SHUTDOWN = 2;
-//    static const unsigned int S_OFF      = 3;
-//    unsigned int sibusState;
-//
-//    // Size of an instance (number of variables of the instance)
-//    unsigned binderSize;
-//
-    // Copy constructor set private to disable it.
+class AsyncAlgo : public Gecode::Support::Runnable {
+    /// Mutex for synchronization on exit
+    Gecode::Support::Mutex mExit;
+    /// Flag to know if the main thread has existed
+    bool mbMainThreadExited;
+    /// Flag to know if the main thread must kill the thread
+    /// or wait for its end
+    bool mbKillThread;
+
+    struct VarDesc {
+        Gecode::TQuantifier q;
+        std::string name;
+        TVarType type;
+        TVal dom;
+    };
+    /// Description of each variable of the binder
+    std::vector<VarDesc> mBinderDesc;
+    /// Description of each auxiliary variable
+    std::vector<VarDesc> mAuxVarDesc;
+
+    struct Tuple {
+        int idxA;
+        int idxB;
+    };
+    /// Swap list (queue) for each variable of the binder
+    std::vector< std::vector<Tuple> > mSwapLists;
+    /// Mutex for access to mSwapLists
+    Gecode::Support::Mutex mSwapListsMutex;
+
+    /// Copy constructor set private to disable it.
     AsyncAlgo(const AsyncAlgo&);
+    /// Wrapper function executed when the thread starts
+    virtual void run(void);
 
 public:
-    // Main constructor set private to disable it.
-    AsyncAlgo();
+    /// Main constructor, \a killThread is set to false
+    /// if we want that the main thread (Quacode) waits for
+    /// the end of the asynchronous working thread
+    AsyncAlgo(bool killThread = true);
 
-    // A new variable \a var has been added as a part of the binder
+    /// A new variable \a var has been added as a part of the binder
     virtual void newVar(Gecode::TQuantifier q, std::string name, TVarType t, TVal v);
-    // A new auxiliary variable \a var has been added
+    /// A new auxiliary variable \a var has been added
     virtual void newAuxVar(std::string name, TVarType t, TVal v);
 
-    // Close the modeling step.
+    /// Close the modeling step.
     virtual void closeModeling();
 
-    // Add a new choice of the search tree to the m_fifo data structure. \a idx gives
-    // the index of the variable in the binder, and \a val the chosen value
-    virtual void newChoice(int idx, TVal val);
-    // Discovered a new promising scenario during search
-    virtual void newPromisingScenario(const TScenario& instance);
-    // Ends the search with a successfull strategy
-    virtual void strategyFound();
-    // A failure occured
-    virtual void newFailure();
-    // Ends the search with a global failure, problem unfeasible
-    virtual void globalFailure();
-
-    // Post a new n0*v0 + n1*v1 <cmp> v2
+    /// Post a new n0*v0 + n1*v1 <cmp> v2
     virtual void postPlus(int n0, std::string v0, int n1, std::string v1, TComparisonType cmp, std::string v2);
-    // Post a new n*v0*v1 <cmp> v2
+    /// Post a new n*v0*v1 <cmp> v2
     virtual void postTimes(int n, std::string v0, std::string v1, TComparisonType cmp, std::string v2);
-    // Post a new SUM_i n_i*v_i <cmp> v0
+    /// Post a new SUM_i n_i*v_i <cmp> v0
     virtual void postLinear(std::vector<Monom> poly, TComparisonType cmp, std::string v0);
 
-//      // Ask a swap of two values \a idVal1 and \a idVal2 of variable \a idVar
+    /// Add a new choice of the search tree to the m_fifo data structure. \a idx gives
+    /// the index of the variable in the binder, and \a val the chosen value
+    virtual void newChoice(int idx, TVal val);
+    /// Discovered a new promising scenario during search
+    virtual void newPromisingScenario(const TScenario& instance);
+    /// Ends the search with a successfull strategy
+    virtual void strategyFound();
+    /// A failure occured
+    virtual void newFailure();
+    /// Ends the search with a global failure, problem unfeasible
+    virtual void globalFailure();
+
+//      /// Ask a swap of two values \a idVal1 and \a idVal2 of variable \a idVar
 //      virtual void sendSwapAsk(unsigned int idVar, unsigned int idVal1, unsigned int idVal2);
-//
-//      // Send a swap done
+
+//      /// Send a swap done
 //      virtual void sendSwapDone(unsigned int idVar, unsigned int idVal1, unsigned int idVal2);
-//
-      // Main destructor
-      virtual ~AsyncAlgo();
+
+    /// Function executed when the thread starts
+    virtual void backgroundTask(void);
+
+    // Main destructor
+    virtual ~AsyncAlgo();
 };
 
 #include <asyncalgo/asyncalgo.hpp>

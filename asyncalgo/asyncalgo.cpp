@@ -28,81 +28,32 @@
  */
 
 #include <asyncalgo/asyncalgo.hh>
-
-// // Initialisation of instance of singleton
-// SIBus* SIBus::m_pSIBusInstance = NULL;
-// 
-// void Receiver::setSIBus(SIBus const * _sibus) {
-//   sibus = _sibus;
-// }
-// 
-// Receiver::~Receiver() { }
-// 
-// SIBus::SIBus() : sibusState(S_INIT), binderSize(0) {
-// #ifdef SIBUS_THREAD
-//   m_thread = NULL;
-// #endif
-// }
-// 
-// void SIBus::create() {
-//   assert(m_pSIBusInstance == NULL);
-//   m_pSIBusInstance = new SIBus();
-// 
-// #ifdef SIBUS_THREAD
-//   m_pSIBusInstance->m_thread = new boost::thread(&SIBus::run,m_pSIBusInstance);
-// #endif
-// }
-// 
-// void SIBus::kill() {
-//   assert(m_pSIBusInstance != NULL);
-//   delete m_pSIBusInstance;
-//   m_pSIBusInstance = NULL;
-// }
-// 
-// void SIBus::run(void) {
-// #ifdef SIBUS_THREAD
-//   // Start working
-//   for ( ; ; ) {
-//     mx.acquire();
-//     while (!m_fifo.empty()) {
-//       manageEvent(m_fifo.front());
-//       m_fifo.pop_front();
-//       mx.release();
-//       mx.acquire();
-//     }
-//     if (sibusState == S_SHUTDOWN) break;
-//     mx.release();
-//     ev_fifo.wait();
-//   }
-//   mx.release();
-// #endif
-// }
-
 #define OSTREAM std::cerr
 
-AsyncAlgo::AsyncAlgo() { }
+AsyncAlgo::AsyncAlgo(bool killThread)
+    : mbMainThreadExited(false), mbKillThread(killThread) {
+}
 
 AsyncAlgo::~AsyncAlgo() {
+    mbMainThreadExited = true;
+    if (!mbKillThread) {
+        mExit.acquire();
+        mExit.release();
+    }
+#ifdef LOG_AUDIT
     OSTREAM << "END" << std::endl;
-#ifdef USE_THREAD
-    //   mx.acquire();
-#endif
-    //   sibusState = S_SHUTDOWN;
-#ifdef USE_THREAD
-    //   ev_fifo.signal();
-    //   mx.release();
-    //   m_thread->join();
-    //   delete m_thread;
-    //   m_thread = NULL;
-    //   sibusState = S_OFF;
 #endif
 }
 
 void AsyncAlgo::closeModeling() {
-    OSTREAM << "CLOSE MODELING" << std::endl;
+#ifdef LOG_AUDIT
+    OSTREAM << "START THREAD" << std::endl;
+#endif
+    Gecode::Support::Thread::run(this);
 }
 
 void AsyncAlgo::newVar(Gecode::TQuantifier q, std::string name, TVarType t, TVal v) {
+    mBinderDesc.push_back({ .q = q, .name = name, .type = t, .dom = v });
     OSTREAM << "VAR_BINDER       =";
     OSTREAM << " var(" << ((q==EXISTS)?"E":"F") << "," << ((t==TYPE_BOOL)?"B":"I") << "," << name;
     switch (v.type) {
@@ -123,6 +74,7 @@ void AsyncAlgo::newVar(Gecode::TQuantifier q, std::string name, TVarType t, TVal
 
 // Add a new auxiliary variable \a var
 void AsyncAlgo::newAuxVar(std::string name, TVarType t, TVal v) {
+    mAuxVarDesc.push_back({ .q = EXISTS, .name = name, .type = t, .dom = v });
     OSTREAM << "VAR_AUX          =";
     OSTREAM << " var(E," << ((t==TYPE_BOOL)?"B":"I") << "," << name;
     switch (v.type) {
@@ -144,11 +96,11 @@ void AsyncAlgo::newAuxVar(std::string name, TVarType t, TVal v) {
 void AsyncAlgo::newChoice(int idx, TVal val) {
     OSTREAM << "CHOICE           = ";
     if (val.type == VAL_INTERVAL)
-        OSTREAM << idx << " # [" << val.val.bounds[0] << ";" << val.val.bounds[1] << "]" << std::endl;
+        OSTREAM << mBinderDesc[idx].name << " # [" << val.val.bounds[0] << ";" << val.val.bounds[1] << "]" << std::endl;
     else if (val.type == VAL_BOOL)
-        OSTREAM << idx << " # " << val.val.b << std::endl;
+        OSTREAM << mBinderDesc[idx].name << " # " << val.val.b << std::endl;
     else
-        OSTREAM << idx << " # " << val.val.z << std::endl;
+        OSTREAM << mBinderDesc[idx].name << " # " << val.val.z << std::endl;
 }
 void AsyncAlgo::newPromisingScenario(const TScenario& scenario) {
     bool bFirst = true;
@@ -200,4 +152,22 @@ void AsyncAlgo::postLinear(std::vector<Monom> poly, TComparisonType cmp, std::st
         bFirst = false;
     }
     OSTREAM << " " << s_ComparisonType[cmp] << " " << v0 << std::endl;
+}
+
+void AsyncAlgo::run() {
+    if (!mbKillThread)
+        mExit.acquire();
+    backgroundTask();
+    if (!mbKillThread)
+        mExit.release();
+    Gecode::Support::Event dummy;
+    dummy.wait();
+}
+
+void AsyncAlgo::backgroundTask() {
+    for ( ; ; ) {
+        if (mbMainThreadExited) break;
+        OSTREAM << "THREAD ..." << std::endl;
+        Gecode::Support::Thread::sleep(300);
+    }
 }

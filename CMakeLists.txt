@@ -59,7 +59,6 @@ PROJECT(QuacodeCallback)
 SET(CMAKE_CXX_FLAGS "-std=c++0x")
 
 SET(CMAKE_VERBOSE_MAKEFILE TRUE)
-SET(USE_THREAD FALSE CACHE BOOL "Set to true to use threads.")
 
 # Check if Gecode is configured with --enable-audit
 FILE(STRINGS ${GECODE_BIN}/config.status GECODE_AUDIT REGEX "D\\[\"GECODE_AUDIT\"\\]=")
@@ -95,6 +94,12 @@ ELSE(UNIX)
   SET(BUILD_SHARED_LIBS ON)
 ENDIF(UNIX)
 
+FIND_PACKAGE(Threads)
+SET(CALLBACK_LIBS ${CMAKE_THREAD_LIBS_INIT})
+IF(NOT Threads_FOUND)
+    MESSAGE(FATAL_ERROR "Thread (pthread) library are needed, consider to install them or disable threads.")
+ENDIF ()
+
 INCLUDE(CheckCXXCompilerFlag)
 SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_MODULE_PATH})
 
@@ -121,8 +126,6 @@ IF (CMAKE_COMPILER_IS_GNUCXX)
   SET(CMAKE_CXX_FLAGS_DEBUG "-ggdb")
 ENDIF ()
 
-FIND_PACKAGE(Threads)
-
 check_cxx_compiler_flag(-fvisibility=hidden HAVE_VISIBILITY_HIDDEN_FLAG)
 IF (HAVE_VISIBILITY_HIDDEN_FLAG)
   SET(GECODE_GCC_HAS_CLASS_VISIBILITY "/**/")
@@ -146,24 +149,10 @@ SET(CALLBACK_EXAMPLES_SRCS
   examples/baker.cpp
 )
 
-IF (DISJUNCTION)
-    SET(CALLBACK_EXAMPLES_SRCS ${CALLBACK_EXAMPLES_SRCS} examples/disjunction.cpp)
-ENDIF()
-
 SOURCE_GROUP("Hpp Files" REGULAR_EXPRESSION ".hpp")
 
 SET_SOURCE_FILES_PROPERTIES(${ALL_HEADERS} PROPERTIES HEADER_FILE_ONLY TRUE)
 SET_SOURCE_FILES_PROPERTIES(${ALL_HPP} PROPERTIES HEADER_FILE_ONLY TRUE)
-
-SET(CALLBACK_LIBS "")
-IF (CALLBACK_THREAD)
-  IF(NOT Threads_FOUND)
-    MESSAGE(FATAL_ERROR "Thread (pthread) library are needed, consider to install them or disable threads.")
-  ELSE()
-    ADD_DEFINITIONS(-DUSE_THREAD)
-    SET(CALLBACK_LIBS ${CMAKE_THREAD_LIBS_INIT})
-  ENDIF()
-ENDIF ()
 
 # Add targets for examples
 FOREACH (example ${CALLBACK_EXAMPLES_SRCS})
