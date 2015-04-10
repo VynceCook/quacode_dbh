@@ -77,11 +77,11 @@ void ParallelLogger::newAuxVarCreated(std::string name, TVarType t, TVal v) {
 void ParallelLogger::newChoice(int iVar, TVal val) {
     OSTREAM << "CHOICE           = ";
     if (val.type == VAL_INTERVAL)
-        OSTREAM << mBinderDesc[iVar].name << " # [" << val.val.bounds[0] << ";" << val.val.bounds[1] << "]" << std::endl;
+        OSTREAM << getVarDesc(iVar).name << " # [" << val.val.bounds[0] << ";" << val.val.bounds[1] << "]" << std::endl;
     else if (val.type == VAL_BOOL)
-        OSTREAM << mBinderDesc[iVar].name << " # " << val.val.b << std::endl;
+        OSTREAM << getVarDesc(iVar).name << " # " << val.val.b << std::endl;
     else
-        OSTREAM << mBinderDesc[iVar].name << " # " << val.val.z << std::endl;
+        OSTREAM << getVarDesc(iVar).name << " # " << val.val.z << std::endl;
 }
 void ParallelLogger::newPromisingScenario(const TScenario& scenario) {
     bool bFirst = true;

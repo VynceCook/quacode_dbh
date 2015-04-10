@@ -40,6 +40,8 @@ AsyncAlgo::~AsyncAlgo() {
         mExit.acquire();
         mExit.release();
     }
+    for (auto& m : mDomainsMutex)
+        delete m;
 }
 
 void AsyncAlgo::run() {

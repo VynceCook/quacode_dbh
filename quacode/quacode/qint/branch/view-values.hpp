@@ -89,7 +89,7 @@ namespace Gecode { namespace Int { namespace Branch {
     std::vector<int> domain;
   public:
     /// Initialize choice for brancher \a b, position \a p and view \a x
-    QPosValuesOrderChoice(const Brancher& b, const Pos& p, const std::vector<int>& domain, IntView x);
+    QPosValuesOrderChoice(const Brancher& b, int offset, const Pos& p, const AsyncAlgo& aAlgo, IntView x);
     /// Initialize choice for brancher \a b from archive \a e
     QPosValuesOrderChoice(const Brancher& b, unsigned int alt, Pos p, Archive& e);
     /// Return value to branch with for alternative \a a
@@ -146,8 +146,7 @@ namespace Gecode { namespace Int { namespace Branch {
   const Choice*
   QViewValuesOrderBrancher<n,min>::choice(Space& home) {
     Pos p = this->pos(home);
-    aAlgo.applySwaps(offset + p.pos);
-    return new QPosValuesOrderChoice(*this,p,aAlgo.mDomains[offset + p.pos],
+    return new QPosValuesOrderChoice(*this,offset,p,aAlgo,
                                      ViewBrancher<IntView,n>::view(p));
   }
 
@@ -180,9 +179,11 @@ namespace Gecode { namespace Int { namespace Branch {
   }
 
   forceinline
-  QPosValuesOrderChoice::QPosValuesOrderChoice(const Brancher& b, const Pos& p, const std::vector<int>& _domain, IntView x)
-    : PosValuesChoice(b,p,x), domain(_domain)
-  { }
+  QPosValuesOrderChoice::QPosValuesOrderChoice(const Brancher& b, int offset, const Pos& p, const AsyncAlgo& aAlgo, IntView x)
+    : PosValuesChoice(b,p,x)
+  {
+      aAlgo.copyDomain(offset + p.pos, domain);
+  }
 
   forceinline
   QPosValuesOrderChoice::QPosValuesOrderChoice(const Brancher& b,

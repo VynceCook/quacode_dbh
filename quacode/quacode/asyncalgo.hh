@@ -91,9 +91,18 @@ struct TVal {
 };
 typedef std::vector<TVal> TScenario;
 
+// Structure which represents a monome in a polynome
 struct Monom {
     int c;
     std::string var;
+};
+
+// Structure which represents the description of a variable
+struct TVarDesc {
+    Gecode::TQuantifier q;
+    std::string name;
+    TVarType type;
+    TVal dom;
 };
 
 class AsyncAlgo : public Gecode::Support::Runnable {
@@ -107,30 +116,15 @@ class AsyncAlgo : public Gecode::Support::Runnable {
     /// or wait for its end
     bool mbKillThread;
 
-    struct VarDesc {
-        Gecode::TQuantifier q;
-        std::string name;
-        TVarType type;
-        TVal dom;
-    };
-public:
     /// Description of each variable of the binder
-    std::vector<VarDesc> mBinderDesc;
-private:
+    std::vector<TVarDesc> mBinderDesc;
     /// Description of each auxiliary variable
-    std::vector<VarDesc> mAuxVarDesc;
+    std::vector<TVarDesc> mAuxVarDesc;
 
     /// Stores the ordered domain of each variable of the binder
     std::vector< std::vector<int> > mDomains;
-
-    struct Tuple {
-        unsigned int iV0;
-        unsigned int iV1;
-    };
-    /// Swap queue for each variable of the binder
-    std::vector< std::queue<Tuple> > mSwapQueues;
-    /// Mutex for access to mSwapLists
-    Gecode::Support::Mutex mSwapListsMutex;
+    /// Mutex for access to mDomains
+    mutable std::vector< Gecode::Support::Mutex* > mDomainsMutex;
 
     /// Copy constructor set private to disable it.
     AsyncAlgo(const AsyncAlgo&);
@@ -146,10 +140,11 @@ public:
     // Main destructor
     QUACODE_EXPORT virtual ~AsyncAlgo();
 
-    /// Apply all pending swaps of variable \a iVar
-    void applySwaps(unsigned int iVar);
+    /// Returns the description of a variable of the binder which
+    /// corresponds to the index \a iVar
+    QUACODE_EXPORT const TVarDesc& getVarDesc(int iVar) const;
 
-    // Returns true is the main thread (i.e. Quacode finished its work)
+    /// Returns true is the main thread (i.e. Quacode finished its work)
     QUACODE_EXPORT bool mainThreadFinished() const;
 
     ///-----------------------------------------------------------------------
@@ -220,7 +215,9 @@ public:
     /// ------- search by the parallel algorithm
     ///-----------------------------------------------------------------------
     /// Ask a swap of two values \a iV0 and \a iV1 of variable \a iVar
-    QUACODE_EXPORT void sendSwapAsk(unsigned int iVar, unsigned int iV0, unsigned int iV1);
+    QUACODE_EXPORT void swap(unsigned int iVar, unsigned int iV0, unsigned int iV1);
+    /// Copy the domain of the given variable \a iVar to dest
+    QUACODE_EXPORT void copyDomain(int iVar, std::vector<int>& dest) const;
 
     ///-----------------------------------------------------------------------
     /// ------- This is the main function called in another thread launched.

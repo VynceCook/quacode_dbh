@@ -28,6 +28,11 @@
  */
 
 #include <cassert>
+#include <algorithm>
+
+forceinline const TVarDesc& AsyncAlgo::getVarDesc(int iVar) const {
+    return mBinderDesc[iVar];
+}
 
 forceinline bool AsyncAlgo::mainThreadFinished() const {
     return mbMainThreadFinished;
@@ -40,8 +45,7 @@ forceinline void AsyncAlgo::closeModeling() {
 forceinline void AsyncAlgo::newVar(Gecode::TQuantifier q, std::string name, TVarType t, TVal v) {
     mBinderDesc.push_back({ .q = q, .name = name, .type = t, .dom = v });
     std::vector<int> domain;
-    std::queue<Tuple> queue;
-    mSwapQueues.push_back(queue);
+    mDomainsMutex.push_back(new Gecode::Support::Mutex());
 
     switch (v.type) {
         case VAL_NONE:
@@ -81,20 +85,15 @@ forceinline void AsyncAlgo::postLinear(const std::vector<Monom>& poly, TComparis
     this->postedLinear(poly,cmp,v0);
 }
 
-forceinline void AsyncAlgo::sendSwapAsk(unsigned int iVar, unsigned int iV0, unsigned int iV1) {
-    Gecode::Support::Lock lck(mSwapListsMutex);
-    mSwapQueues[iVar].push({ .iV0 = iV0, .iV1 = iV1});
+forceinline void AsyncAlgo::swap(unsigned int iVar, unsigned int iV0, unsigned int iV1) {
+    Gecode::Support::Lock lck(*mDomainsMutex[iVar]);
+    int aux = mDomains[iVar][iV0];
+    mDomains[iVar][iV0] = mDomains[iVar][iV1];
+    mDomains[iVar][iV1] = aux;
 }
 
-forceinline void AsyncAlgo::applySwaps(unsigned int iVar) {
-    Gecode::Support::Lock lck(mSwapListsMutex);
-    std::queue<Tuple> &swapQueue = mSwapQueues[iVar];
-    while (!swapQueue.empty()) {
-        Tuple t = swapQueue.front();
-        int aux = mDomains[iVar][t.iV0];
-        mDomains[iVar][t.iV0] = mDomains[iVar][t.iV1];
-        mDomains[iVar][t.iV1] = aux;
-        swapQueue.pop();
-    }
+forceinline void AsyncAlgo::copyDomain(int iVar, std::vector<int>& dest) const {
+    Gecode::Support::Lock lck(*mDomainsMutex[iVar]);
+    std::copy(mDomains[iVar].begin(), mDomains[iVar].end(), dest.begin());
 }
 
