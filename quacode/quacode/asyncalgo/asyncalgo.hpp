@@ -28,7 +28,6 @@
  */
 
 #include <cassert>
-#include <algorithm>
 
 forceinline const TVarDesc& AsyncAlgo::getVarDesc(int iVar) const {
     return mBinderDesc[iVar];
@@ -94,6 +93,7 @@ forceinline void AsyncAlgo::swap(unsigned int iVar, unsigned int iV0, unsigned i
 
 forceinline void AsyncAlgo::copyDomain(int iVar, std::vector<int>& dest) const {
     Gecode::Support::Lock lck(*mDomainsMutex[iVar]);
-    std::copy(mDomains[iVar].begin(), mDomains[iVar].end(), dest.begin());
+    for (auto& x : mDomains[iVar])
+        dest.push_back(x);
 }
 

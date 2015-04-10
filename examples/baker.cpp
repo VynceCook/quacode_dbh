@@ -132,7 +132,8 @@ class QCSPBaker : public Script, public QSpaceInfo {
         std::vector<Monom> expr { {1,"o1"}, {1,"o2"}, {1,"o3"}, {1,"o4"}};
         aAlgo.postLinear(expr,CMP_EQ,"f");
 
-        branch(*this, X, INT_VAR_NONE(), INT_VALUES_MIN());
+        //branch(*this, X, INT_VAR_NONE(), INT_VALUES_MIN());
+        branch(*this, aAlgo, X, INT_VAR_NONE());
 
         // FIN DESCRIPTION PB
         aAlgo.closeModeling();

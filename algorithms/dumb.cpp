@@ -30,10 +30,15 @@
 #include <algorithms/dumb.hh>
 #define OSTREAM std::cerr
 
-DumbAlgorithm::DumbAlgorithm(bool killThread) : AsyncAlgo(killThread) { }
+DumbAlgorithm::DumbAlgorithm(bool killThread) : AsyncAlgo(killThread) {
+    mNbVars = 0;
+}
 DumbAlgorithm::~DumbAlgorithm() { }
 
-void DumbAlgorithm::newVarCreated(int, Gecode::TQuantifier, std::string, TVarType, TVal) { }
+void DumbAlgorithm::newVarCreated(int, Gecode::TQuantifier, std::string, TVarType, TVal) { 
+    mNbVars++;
+}
+
 void DumbAlgorithm::newAuxVarCreated(std::string, TVarType, TVal) { }
 void DumbAlgorithm::newChoice(int, TVal) { }
 void DumbAlgorithm::newPromisingScenario(const TScenario&) { }
@@ -48,8 +53,11 @@ void DumbAlgorithm::postedLinear(const std::vector<Monom>&, TComparisonType, std
 void DumbAlgorithm::parallelTask() {
     OSTREAM << "THREAD start" << std::endl;
     for ( ; ; ) {
+        if (mainThreadFinished()) break;
         OSTREAM << "THREAD ..." << std::endl;
+//        swap(2,8,26);
         Gecode::Support::Thread::sleep(300);
+        break;
     }
     OSTREAM << "THREAD stop" << std::endl;
 }

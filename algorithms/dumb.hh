@@ -36,6 +36,8 @@ class DumbAlgorithm : public AsyncAlgo {
     /// Copy constructor set private to disable it.
     DumbAlgorithm(const DumbAlgorithm&);
 
+    /// Stores the number of variables
+    int mNbVars;
 public:
     /// Main constructor, \a killThread is set to false
     /// if we want that the main thread (Quacode) waits for
