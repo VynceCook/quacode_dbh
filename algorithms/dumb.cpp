@@ -41,9 +41,9 @@ void DumbAlgorithm::strategyFound() { }
 void DumbAlgorithm::newFailure() { }
 void DumbAlgorithm::globalFailure() { }
 
-void DumbAlgorithm::postedPlus(int, std::string v0, int n1, std::string v1, TComparisonType cmp, std::string v2) { }
-void DumbAlgorithm::postedTimes(int n, std::string v0, std::string v1, TComparisonType cmp, std::string v2) { }
-void DumbAlgorithm::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, std::string v0) { }
+void DumbAlgorithm::postedPlus(int, std::string, int, std::string, TComparisonType, std::string) { }
+void DumbAlgorithm::postedTimes(int, std::string, std::string, TComparisonType, std::string) { }
+void DumbAlgorithm::postedLinear(const std::vector<Monom>&, TComparisonType, std::string) { }
 
 void DumbAlgorithm::parallelTask() {
     OSTREAM << "THREAD start" << std::endl;
