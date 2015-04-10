@@ -138,6 +138,7 @@ ELSE (NOT GECODE_FOUND)
     quacode/search/sequential/qpath.hh
     quacode/search/sequential/qdfs.hh
     quacode/qint/qbool.hh
+    quacode/asyncalgo.hh
   )
   SET(QUACODE_HPP
     quacode/qspaceinfo.hpp
@@ -149,6 +150,8 @@ ELSE (NOT GECODE_FOUND)
     quacode/qint/qbool/or.hpp
     quacode/qint/qbool/xor.hpp
     quacode/qint/qbool/xorv.hpp
+    quacode/qint/branch/view-values.hpp
+    quacode/asyncalgo/asyncalgo.hpp
   )
   SET(QUACODE_SRCS
     quacode/qspaceinfo.cpp
@@ -156,6 +159,7 @@ ELSE (NOT GECODE_FOUND)
     quacode/search/qdfs.cpp
     quacode/search/sequential/qpath.cpp
     quacode/qint/qbool/qbool.cpp
+    quacode/asyncalgo/asyncalgo.cpp
     ${GECODE_SRC}/gecode/search/meta/nogoods.cpp
   )
   SET(QUACODE_EXAMPLES_SRCS

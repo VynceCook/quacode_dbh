@@ -34,7 +34,7 @@
  *
  */
 #include <gecode/int/branch.hh>
-#include <asyncalgo/asyncalgo.hh>
+#include <quacode/asyncalgo.hh>
 #define UNUSED_STREAM std::cout
 
 namespace Gecode { namespace Int { namespace Branch {
@@ -60,8 +60,6 @@ namespace Gecode { namespace Int { namespace Branch {
     int offset;
     /// Asynchronous algorithm
     AsyncAlgo& aAlgo;
-    /// Description of domains parse order of the variables involved in the brancher
-//ICI    SharedArray< std::vector<ValOrder> > domainsParseOrder;
     /// Constructor for cloning \a b
     QViewValuesOrderBrancher(Space& home, bool shared, QViewValuesOrderBrancher& b);
     /// Constructor for creation
@@ -87,11 +85,11 @@ namespace Gecode { namespace Int { namespace Branch {
   /// is stored in a array such as it can be parse in a home made way.
   class GECODE_VTABLE_EXPORT QPosValuesOrderChoice : public PosValuesChoice {
   protected:
-    /// The order of the alternatives to parse the domain in a customize way
-    std::vector<unsigned int> parseOrder;
+    /// The ordered values
+    std::vector<int> domain;
   public:
     /// Initialize choice for brancher \a b, position \a p and view \a x
-    QPosValuesOrderChoice(const Brancher& b, const Pos& p, const std::vector<unsigned int>& parseOrder, IntView x);
+    QPosValuesOrderChoice(const Brancher& b, const Pos& p, const std::vector<int>& domain, IntView x);
     /// Initialize choice for brancher \a b from archive \a e
     QPosValuesOrderChoice(const Brancher& b, unsigned int alt, Pos p, Archive& e);
     /// Return value to branch with for alternative \a a
@@ -106,7 +104,8 @@ namespace Gecode { namespace Int { namespace Branch {
 
   forceinline int
   QPosValuesOrderChoice::val(unsigned int a) const {
-    return PosValuesChoice::val(parseOrder[a]);
+    return domain[a];
+    //ICI return PosValuesChoice::val(parseOrder[a]);
   }
 
   // ---------------------------------------
@@ -120,18 +119,6 @@ namespace Gecode { namespace Int { namespace Branch {
                       ViewSel<IntView>* vs[n], BranchFilter bf, IntVarValPrint vvp0)
     : ViewValuesBrancher<n,min>(home,x,vs,bf,vvp0), offset(_offset), aAlgo(_aAlgo) {
     home.notice(*this,AP_DISPOSE);
-//ICI    domainsParseOrder.init(x.size());
-//ICI    receiver.setNbVars(offset + x.size());
-//ICI    for (int i=0; i < x.size(); i++) {
-//ICI      unsigned int k = 0;
-//ICI      std::vector<TVal> domain;
-//ICI      assert(x[i].range());
-//ICI      for (int j=x[i].min(); j <= x[i].max(); j++, k++) {
-//ICI        domainsParseOrder[i].push_back(ValOrder(j,k));
-//ICI        domain.push_back(TVal(j));
-//ICI      }
-//ICI      SIBus::instance().sendDomainDescription(i+offset,domain);
-//ICI    }
   }
 
   template<int n, bool min>
@@ -146,9 +133,8 @@ namespace Gecode { namespace Int { namespace Branch {
   forceinline
   QViewValuesOrderBrancher<n,min>::
   QViewValuesOrderBrancher(Space& home, bool shared, QViewValuesOrderBrancher& b)
-     : ViewValuesBrancher<n,min>(home,shared,b), offset(b.offset), aAlgo(b.aAlgo) {
-//ICI    domainsParseOrder.update(home,shared,b.domainsParseOrder);
-  }
+  : ViewValuesBrancher<n,min>(home,shared,b),
+    offset(b.offset), aAlgo(b.aAlgo) { }
 
   template<int n, bool min>
   Actor*
@@ -156,38 +142,12 @@ namespace Gecode { namespace Int { namespace Branch {
     return new (home) QViewValuesOrderBrancher<n,min>(home,shared,*this);
   }
 
-//ICI  forceinline bool orderTest(Tuple i, Tuple j) { return (i.v2 < j.v2); }
-
   template<int n, bool min>
   const Choice*
   QViewValuesOrderBrancher<n,min>::choice(Space& home) {
     Pos p = this->pos(home);
-//ICI    while (!receiver.emptySwapRequestFor(offset + p.pos)) {
-//ICI      Tuple t = receiver.frontSwapRequestFor(offset + p.pos);
-//ICI      unsigned int k = domainsParseOrder[p.pos][t.v1].o;
-//ICI      domainsParseOrder[p.pos][t.v1].o = domainsParseOrder[p.pos][t.v2].o;
-//ICI      domainsParseOrder[p.pos][t.v2].o = k;
-//ICI      receiver.popSwapRequestFor(offset + p.pos);
-//ICI      SIBus::instance().sendSwapDone(offset + p.pos,t.v1,t.v2);
-//ICI    }
-//ICI
-//ICI    std::vector<Tuple> alternativeAndOrder;
-//ICI    ViewValues<IntView> vv(ViewBrancher<IntView,n>::view(p));
-//ICI    typename std::vector<ValOrder>::const_iterator it = domainsParseOrder[p.pos].begin();
-//ICI    unsigned int i = 0;
-//ICI    while (vv()) {
-//ICI      assert(it != domainsParseOrder[p.pos].end());
-//ICI      for ( ; (*it).v != vv.val() ; ++it );
-//ICI      alternativeAndOrder.push_back(Tuple(i,(*it).o));
-//ICI      ++i; ++vv;
-//ICI    }
-//ICI    std::sort(alternativeAndOrder.begin(), alternativeAndOrder.end(), orderTest);
-    std::vector<unsigned int> parseOrder;
-//ICI    typename std::vector<Tuple>::const_iterator it2    = alternativeAndOrder.begin();
-//ICI    typename std::vector<Tuple>::const_iterator it2End = alternativeAndOrder.end();
-//ICI    for ( ; it2 != it2End; ++it2 ) parseOrder.push_back((*it2).v1);
-
-    return new QPosValuesOrderChoice(*this,p,parseOrder,
+    aAlgo.applySwaps(offset + p.pos);
+    return new QPosValuesOrderChoice(*this,p,aAlgo.mDomains[offset + p.pos],
                                      ViewBrancher<IntView,n>::view(p));
   }
 
@@ -215,26 +175,23 @@ namespace Gecode { namespace Int { namespace Branch {
   forceinline size_t
   QViewValuesOrderBrancher<n,min>::dispose(Space& home) {
     home.ignore(*this,AP_DISPOSE);
-//ICI    domainsParseOrder.~SharedArray();
     ViewValuesBrancher<n,min>::dispose(home);
     return sizeof(*this);
   }
 
   forceinline
-  QPosValuesOrderChoice::QPosValuesOrderChoice(const Brancher& b, const Pos& p, const std::vector<unsigned int>& _parseOrder, IntView x)
-    : PosValuesChoice(b,p,x), parseOrder(_parseOrder)
-  {
-//ICI    assert( this->alternatives() == parseOrder.size() );
-  }
+  QPosValuesOrderChoice::QPosValuesOrderChoice(const Brancher& b, const Pos& p, const std::vector<int>& _domain, IntView x)
+    : PosValuesChoice(b,p,x), domain(_domain)
+  { }
 
   forceinline
-  QPosValuesOrderChoice::QPosValuesOrderChoice(const Brancher& b, unsigned int a, Pos p,
-                                               Archive& e)
-    : PosValuesChoice(b,a,p,e) {
-//ICI    int dpoSize = 0;
-//ICI    e >> dpoSize;
-//ICI    parseOrder.resize(dpoSize);
-//ICI    for (int i=0; i < dpoSize; i++) e >> parseOrder[i];
+  QPosValuesOrderChoice::QPosValuesOrderChoice(const Brancher& b,
+          unsigned int a, Pos p, Archive& e)
+  : PosValuesChoice(b,a,p,e) {
+      int domSize = 0;
+      e >> domSize;
+      domain.resize(domSize);
+      for (int i=0; i < domSize; i++) e >> domain[i];
   }
 
   forceinline size_t
@@ -249,9 +206,9 @@ namespace Gecode { namespace Int { namespace Branch {
   forceinline void
   QPosValuesOrderChoice::archive(Archive& e) const {
     PosValuesChoice::archive(e);
-//ICI    int dpoSize = (int)parseOrder.size();
-//ICI    e << dpoSize;
-//ICI    for (int i=0; i < dpoSize; i++) e << parseOrder[i];
+    int domSize = (int)domain.size();
+    e << domSize;
+    for (int i=0; i < domSize; i++) e << domain[i];
   }
 
 }}}

@@ -41,6 +41,8 @@
 #include <gecode/minimodel.hh>
 #include <gecode/driver.hh>
 
+#include <algorithms/logger.hh>
+
 using namespace Gecode;
 
 #ifdef GECODE_HAS_GIST
@@ -164,7 +166,7 @@ int main(int argc, char* argv[])
     BakerOptions opt("Baker Problem",0);
     opt.parse(argc,argv);
 
-    AsyncAlgo aAlgo(false);
+    ParallelLogger aAlgo(false);
     opt.aAlgo = &aAlgo;
     Script::run<QCSPBaker,QDFS,BakerOptions>(opt);
 

@@ -39,7 +39,7 @@
 #include <iomanip>
 #include <quacode/qcsp.hh>
 #include <vector>
-#include <asyncalgo/asyncalgo.hh>
+#include <quacode/asyncalgo.hh>
 
 namespace Gecode {
   // Forward declaration
