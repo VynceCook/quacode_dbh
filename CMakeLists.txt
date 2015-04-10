@@ -138,11 +138,13 @@ ENDIF()
 
 SET(CALLBACK_HEADERS
     algorithms/logger.hh
+    algorithms/dumb.hh
 )
 SET(CALLBACK_HPP
 )
 SET(CALLBACK_SRCS
     algorithms/logger.cpp
+    algorithms/dumb.cpp
     quacode/quacode/asyncalgo/asyncalgo.cpp
 )
 SET(CALLBACK_EXAMPLES_SRCS

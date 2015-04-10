@@ -42,6 +42,7 @@
 #include <gecode/driver.hh>
 
 #include <algorithms/logger.hh>
+#include <algorithms/dumb.hh>
 
 using namespace Gecode;
 
@@ -166,7 +167,8 @@ int main(int argc, char* argv[])
     BakerOptions opt("Baker Problem",0);
     opt.parse(argc,argv);
 
-    ParallelLogger aAlgo(false);
+    DumbAlgorithm aAlgo;
+    //ParallelLogger aAlgo(false);
     opt.aAlgo = &aAlgo;
     Script::run<QCSPBaker,QDFS,BakerOptions>(opt);
 

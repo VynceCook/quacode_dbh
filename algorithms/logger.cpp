@@ -33,7 +33,7 @@
 ParallelLogger::ParallelLogger(bool killThread) : AsyncAlgo(killThread) { }
 
 ParallelLogger::~ParallelLogger() {
-    OSTREAM << "END" << std::endl;
+    OSTREAM << "OBJECT DESTROYED" << std::endl;
 }
 
 void ParallelLogger::newVarCreated(int idx, Gecode::TQuantifier q, std::string name, TVarType t, TVal v) {
@@ -136,9 +136,11 @@ void ParallelLogger::postedLinear(const std::vector<Monom>& poly, TComparisonTyp
 }
 
 void ParallelLogger::parallelTask() {
+    OSTREAM << "THREAD start" << std::endl;
     for ( ; ; ) {
         if (mainThreadFinished()) break;
         OSTREAM << "THREAD ..." << std::endl;
         Gecode::Support::Thread::sleep(300);
     }
+    OSTREAM << "THREAD stop" << std::endl;
 }

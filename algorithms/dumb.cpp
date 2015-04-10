@@ -27,29 +27,29 @@
  *
  */
 
-#include <quacode/asyncalgo.hh>
+#include <algorithms/dumb.hh>
+#define OSTREAM std::cerr
 
-AsyncAlgo::AsyncAlgo(bool killThread)
-    : mbMainThreadFinished(false), mbKillThread(killThread) {
-}
+DumbAlgorithm::DumbAlgorithm(bool killThread) : AsyncAlgo(killThread) { }
+DumbAlgorithm::~DumbAlgorithm() { }
 
-AsyncAlgo::~AsyncAlgo() {
-    mbMainThreadFinished = true;
-    if (!mbKillThread) {
-        mExit.acquire();
-        mExit.release();
+void DumbAlgorithm::newVarCreated(int, Gecode::TQuantifier, std::string, TVarType, TVal) { }
+void DumbAlgorithm::newAuxVarCreated(std::string, TVarType, TVal) { }
+void DumbAlgorithm::newChoice(int, TVal) { }
+void DumbAlgorithm::newPromisingScenario(const TScenario&) { }
+void DumbAlgorithm::strategyFound() { }
+void DumbAlgorithm::newFailure() { }
+void DumbAlgorithm::globalFailure() { }
+
+void DumbAlgorithm::postedPlus(int, std::string v0, int n1, std::string v1, TComparisonType cmp, std::string v2) { }
+void DumbAlgorithm::postedTimes(int n, std::string v0, std::string v1, TComparisonType cmp, std::string v2) { }
+void DumbAlgorithm::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, std::string v0) { }
+
+void DumbAlgorithm::parallelTask() {
+    OSTREAM << "THREAD start" << std::endl;
+    for ( ; ; ) {
+        OSTREAM << "THREAD ..." << std::endl;
+        Gecode::Support::Thread::sleep(300);
     }
-    for (auto& m : mDomainsMutex)
-        delete m;
+    OSTREAM << "THREAD stop" << std::endl;
 }
-
-void AsyncAlgo::run() {
-    if (!mbKillThread)
-        mExit.acquire();
-    parallelTask();
-    if (!mbKillThread)
-        mExit.release();
-    Gecode::Support::Event dummy;
-    dummy.wait();
-}
-
