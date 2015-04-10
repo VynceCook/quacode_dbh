@@ -111,9 +111,12 @@ class AsyncAlgo : public Gecode::Support::Runnable {
     /// Description of each auxiliary variable
     std::vector<VarDesc> mAuxVarDesc;
 
+    /// Stores the ordered domain of each variable of the binder
+    std::vector< std::vector<int> > mDomains;
+
     struct Tuple {
-        int idxA;
-        int idxB;
+        int iV0;
+        int iV1;
     };
     /// Swap list (queue) for each variable of the binder
     std::vector< std::vector<Tuple> > mSwapLists;
@@ -146,9 +149,9 @@ public:
     /// Post a new SUM_i n_i*v_i <cmp> v0
     virtual void postLinear(std::vector<Monom> poly, TComparisonType cmp, std::string v0);
 
-    /// Add a new choice of the search tree to the m_fifo data structure. \a idx gives
+    /// Add a new choice of the search tree to the m_fifo data structure. \a iVar gives
     /// the index of the variable in the binder, and \a val the chosen value
-    virtual void newChoice(int idx, TVal val);
+    virtual void newChoice(int iVar, TVal val);
     /// Discovered a new promising scenario during search
     virtual void newPromisingScenario(const TScenario& instance);
     /// Ends the search with a successfull strategy
@@ -158,14 +161,13 @@ public:
     /// Ends the search with a global failure, problem unfeasible
     virtual void globalFailure();
 
-//      /// Ask a swap of two values \a idVal1 and \a idVal2 of variable \a idVar
-//      virtual void sendSwapAsk(unsigned int idVar, unsigned int idVal1, unsigned int idVal2);
-
-//      /// Send a swap done
-//      virtual void sendSwapDone(unsigned int idVar, unsigned int idVal1, unsigned int idVal2);
+    /// Ask a swap of two values \a iV0 and \a iV1 of variable \a iVar
+    virtual void sendSwapAsk(unsigned int iVar, unsigned int iV0, unsigned int iV1);
+    /// Apply all pending swaps of variable \a iVar
+    virtual void applySwaps(unsigned int iVar);
 
     /// Function executed when the thread starts
-    virtual void backgroundTask(void);
+    virtual void parallelTask(void);
 
     // Main destructor
     virtual ~AsyncAlgo();

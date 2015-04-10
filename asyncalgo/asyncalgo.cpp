@@ -54,22 +54,34 @@ void AsyncAlgo::closeModeling() {
 
 void AsyncAlgo::newVar(Gecode::TQuantifier q, std::string name, TVarType t, TVal v) {
     mBinderDesc.push_back({ .q = q, .name = name, .type = t, .dom = v });
+    std::vector<int> domain;
+    std::vector<Tuple> list;
+    mSwapLists.push_back(list);
+
     OSTREAM << "VAR_BINDER       =";
     OSTREAM << " var(" << ((q==EXISTS)?"E":"F") << "," << ((t==TYPE_BOOL)?"B":"I") << "," << name;
     switch (v.type) {
         case VAL_NONE:
-            break;
+            GECODE_NEVER;
         case VAL_BOOL:
             OSTREAM << ",bool(" << v.val.b << ")";
+            domain.resize(1);
+            domain[0] = v.val.b;
             break;
         case VAL_INT:
             OSTREAM << ",int(" << v.val.z << ")";
+            domain.resize(1);
+            domain[0] = v.val.z;
             break;
         case VAL_INTERVAL:
             OSTREAM << ",interval(" << v.val.bounds[0] << ":" << v.val.bounds[1] << ")";
+            domain.resize(v.val.bounds[1] - v.val.bounds[0] + 1);
+            for(int i=0,x=v.val.bounds[0]; x <= v.val.bounds[1]; x++,i++)
+                domain[i] = x;
             break;
     }
     OSTREAM << ")" << std::endl;
+    mDomains.push_back(domain);
 }
 
 // Add a new auxiliary variable \a var
@@ -93,14 +105,14 @@ void AsyncAlgo::newAuxVar(std::string name, TVarType t, TVal v) {
     OSTREAM << ")" << std::endl;
 }
 
-void AsyncAlgo::newChoice(int idx, TVal val) {
+void AsyncAlgo::newChoice(int iVar, TVal val) {
     OSTREAM << "CHOICE           = ";
     if (val.type == VAL_INTERVAL)
-        OSTREAM << mBinderDesc[idx].name << " # [" << val.val.bounds[0] << ";" << val.val.bounds[1] << "]" << std::endl;
+        OSTREAM << mBinderDesc[iVar].name << " # [" << val.val.bounds[0] << ";" << val.val.bounds[1] << "]" << std::endl;
     else if (val.type == VAL_BOOL)
-        OSTREAM << mBinderDesc[idx].name << " # " << val.val.b << std::endl;
+        OSTREAM << mBinderDesc[iVar].name << " # " << val.val.b << std::endl;
     else
-        OSTREAM << mBinderDesc[idx].name << " # " << val.val.z << std::endl;
+        OSTREAM << mBinderDesc[iVar].name << " # " << val.val.z << std::endl;
 }
 void AsyncAlgo::newPromisingScenario(const TScenario& scenario) {
     bool bFirst = true;
@@ -154,17 +166,24 @@ void AsyncAlgo::postLinear(std::vector<Monom> poly, TComparisonType cmp, std::st
     OSTREAM << " " << s_ComparisonType[cmp] << " " << v0 << std::endl;
 }
 
+void AsyncAlgo::sendSwapAsk(unsigned int iVar, unsigned int iV0, unsigned int iV1) {
+    mSwapLists[iVar].push_back({ .iV0 = iV0, .iV1 = iV1});
+}
+
+void AsyncAlgo::applySwaps(unsigned int iVar) {
+}
+
 void AsyncAlgo::run() {
     if (!mbKillThread)
         mExit.acquire();
-    backgroundTask();
+    parallelTask();
     if (!mbKillThread)
         mExit.release();
     Gecode::Support::Event dummy;
     dummy.wait();
 }
 
-void AsyncAlgo::backgroundTask() {
+void AsyncAlgo::parallelTask() {
     for ( ; ; ) {
         if (mbMainThreadExited) break;
         OSTREAM << "THREAD ..." << std::endl;
