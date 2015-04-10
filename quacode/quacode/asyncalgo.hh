@@ -116,10 +116,10 @@ class AsyncAlgo : public Gecode::Support::Runnable {
 public:
     /// Description of each variable of the binder
     std::vector<VarDesc> mBinderDesc;
+private:
     /// Description of each auxiliary variable
     std::vector<VarDesc> mAuxVarDesc;
 
-private:
     /// Stores the ordered domain of each variable of the binder
     std::vector< std::vector<int> > mDomains;
 
