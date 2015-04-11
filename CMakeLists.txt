@@ -136,15 +136,11 @@ IF (LOG_AUDIT)
   ADD_DEFINITIONS(-DLOG_AUDIT)
 ENDIF()
 
-SET(CALLBACK_HEADERS
-    algorithms/logger.hh
-    algorithms/dumb.hh
-)
-SET(CALLBACK_HPP
-)
-SET(CALLBACK_SRCS
-    algorithms/logger.cpp
-    algorithms/dumb.cpp
+FILE(GLOB ALGORITHMS_HEADERS algorithms/*.hh)
+FILE(GLOB ALGORITHMS_HPP algorithms/*.hpp)
+FILE(GLOB ALGORITHMS_SRCS algorithms/*.cpp)
+SET(ALGORITHMS_SRCS
+    ${ALGORITHMS_SRCS}
     quacode/quacode/asyncalgo/asyncalgo.cpp
 )
 SET(CALLBACK_EXAMPLES_SRCS
@@ -159,7 +155,7 @@ SET_SOURCE_FILES_PROPERTIES(${ALL_HPP} PROPERTIES HEADER_FILE_ONLY TRUE)
 # Add targets for examples
 FOREACH (example ${CALLBACK_EXAMPLES_SRCS})
   GET_FILENAME_COMPONENT(exampleBin ${example} NAME_WE)
-  ADD_EXECUTABLE(${exampleBin} ${CALLBACK_HEADERS} ${CALLBACK_SRCS} ${CALLBACK_HPP} ${example})
+  ADD_EXECUTABLE(${exampleBin} ${ALGORITHMS_HEADERS} ${ALGORITHMS_SRCS} ${ALGORITHMS_HPP} ${example})
   TARGET_LINK_LIBRARIES(${exampleBin} ${QUACODE_LIBRARIES} ${GECODE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
   # set -static, when STATIC_LINKING is TRUE and set LINK_SEARCH_END_STATIC
