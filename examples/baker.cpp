@@ -43,6 +43,7 @@
 
 #include <algorithms/logger.hh>
 #include <algorithms/dumb.hh>
+#include <algorithms/montecarlo.hh>
 
 using namespace Gecode;
 
@@ -163,8 +164,9 @@ int main(int argc, char* argv[])
     BakerOptions opt("Baker Problem",0);
     opt.parse(argc,argv);
 
-    DumbAlgorithm aAlgo;
     //Logger aAlgo(false);
+    //DumbAlgorithm aAlgo;
+    MonteCarlo aAlgo;
     opt.aAlgo = &aAlgo;
     Script::run<QCSPBaker,QDFS,BakerOptions>(opt);
 
