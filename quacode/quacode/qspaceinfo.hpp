@@ -677,10 +677,7 @@ namespace Gecode {
                                  std::ostream& ) {
     const QSpaceInfo& qsi = dynamic_cast<const QSpaceInfo&>(home);
     if (qsi.bRecordStrategy) const_cast<QSpaceInfo&>(qsi).sharedInfo.scenarioChoice(bh.id(),pos,x.min(),x.max());
-    if (x.assigned())
-      qsi.aAlgo.newChoice(qsi.sharedInfo.brancherOffset(bh.id()) + pos,TVal(x.val()));
-    else
-      qsi.aAlgo.newChoice(qsi.sharedInfo.brancherOffset(bh.id()) + pos,TVal(x.min(),x.max()));
+    qsi.aAlgo.newChoice(qsi.sharedInfo.brancherOffset(bh.id()) + pos,x.min(),x.max());
   }
 
   template<> forceinline
@@ -708,10 +705,7 @@ namespace Gecode {
                                  std::ostream& os) {
     const QSpaceInfo& qsi = dynamic_cast<const QSpaceInfo&>(home);
     if (qsi.bRecordStrategy) const_cast<QSpaceInfo&>(qsi).sharedInfo.scenarioChoice(bh.id(),pos,x.min(),x.max());
-    if (x.assigned())
-      qsi.aAlgo.newChoice(qsi.sharedInfo.brancherOffset(bh.id()) + pos,TVal(x.val()));
-    else
-      qsi.aAlgo.newChoice(qsi.sharedInfo.brancherOffset(bh.id()) + pos,TVal(x.min(),x.max()));
+    qsi.aAlgo.newChoice(qsi.sharedInfo.brancherOffset(bh.id()) + pos,x.min(),x.max());
     runCustomChoice(home,bh,alt,x,pos,val,os);
   }
 

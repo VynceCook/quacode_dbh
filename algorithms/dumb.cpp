@@ -35,12 +35,12 @@ DumbAlgorithm::DumbAlgorithm(bool killThread) : AsyncAlgo(killThread) {
 }
 DumbAlgorithm::~DumbAlgorithm() { }
 
-void DumbAlgorithm::newVarCreated(int, Gecode::TQuantifier, std::string, TVarType, TVal) { 
+void DumbAlgorithm::newVarCreated(int, Gecode::TQuantifier, std::string, TVarType, int, int) {
     mNbVars++;
 }
 
-void DumbAlgorithm::newAuxVarCreated(std::string, TVarType, TVal) { }
-void DumbAlgorithm::newChoice(int, TVal) { }
+void DumbAlgorithm::newAuxVarCreated(std::string, TVarType, int, int) { }
+void DumbAlgorithm::newChoice(int, int, int) { }
 void DumbAlgorithm::newPromisingScenario(const TScenario&) { }
 void DumbAlgorithm::strategyFound() { }
 void DumbAlgorithm::newFailure() { }

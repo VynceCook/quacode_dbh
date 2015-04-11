@@ -59,39 +59,12 @@ typedef unsigned int TVarType;
 // Information on comparison operator
 typedef unsigned int TComparisonType;
 
-// Availables values types for a value.
-// Either a value (bool or int), or an interval
-#define VAL_NONE      0
-#define VAL_BOOL      1
-#define VAL_INT       2
-#define VAL_INTERVAL  3
-// Information on type of argument of a constraint
-typedef unsigned int TValType;
-
-// Availables values types for a variable.
-struct TVal {
-    TValType type;
-    union {
-        bool b;
-        int  z;
-        int  bounds[2];
-    } val;
-    TVal() : type(VAL_NONE) {}
-    TVal(bool _b) : type(VAL_BOOL) { val.b = _b; }
-    TVal(int  _z) : type(VAL_INT) { val.z = _z; }
-    TVal(int _min, int _max) : type(VAL_INTERVAL) { val.bounds[0] = _min; val.bounds[1] = _max; }
-
-    bool operator!=(const TVal& v) const { return !this->operator==(v); }
-    bool operator==(const TVal& v) const {
-        return ((v.type == type) && (
-                    (type == VAL_NONE) ||
-                    ((type == VAL_BOOL) && (val.b == v.val.b)) ||
-                    ((type == VAL_INT) && (val.z == v.val.z)) ||
-                    ((type == VAL_INTERVAL) && (val.bounds[0] == v.val.bounds[0]) && (val.bounds[1] == v.val.bounds[1]))
-                    ));
-    }
+// Structure which represents an interval
+struct Interval {
+    int min;
+    int max;
 };
-typedef std::vector<TVal> TScenario;
+typedef std::vector<Interval> TScenario;
 
 // Structure which represents a monome in a polynome
 struct Monom {
@@ -104,7 +77,8 @@ struct TVarDesc {
     Gecode::TQuantifier q;
     std::string name;
     TVarType type;
-    TVal dom;
+    int min;
+    int max;
 };
 
 class AsyncAlgo : public Gecode::Support::Runnable {
@@ -160,9 +134,9 @@ public:
     /// ====== These are to be called during modeling stage
     /// ===================================================
     /// Quacode adds a new variable \a var in the binder
-    QUACODE_EXPORT void newVar(Gecode::TQuantifier q, std::string name, TVarType t, TVal v);
+    QUACODE_EXPORT void newVar(Gecode::TQuantifier q, std::string name, TVarType t, int min, int max);
     /// Quacode adds a new variable auxiliary \a var
-    QUACODE_EXPORT void newAuxVar(std::string name, TVarType t, TVal v);
+    QUACODE_EXPORT void newAuxVar(std::string name, TVarType t, int min, int max);
 
     /// Quacode post a new n0*v0 + n1*v1 <cmp> v2
     QUACODE_EXPORT void postPlus(int n0, std::string v0, int n1, std::string v1, TComparisonType cmp, std::string v2);
@@ -176,11 +150,13 @@ public:
     /// ===================================================
     /// Function called when a new variable \a var named \a name
     /// is created at position \a idx in the binder.
-    /// \a t is the type of the variable, and \a v its value
-    QUACODE_EXPORT virtual void newVarCreated(int idx, Gecode::TQuantifier q, std::string name, TVarType t, TVal v) = 0;
+    /// \a t is the type of the variable, and
+    /// \a min and \a max are the lower and upper bounds of the domain
+    QUACODE_EXPORT virtual void newVarCreated(int idx, Gecode::TQuantifier q, std::string name, TVarType t, int min, int max) = 0;
     /// Function called when a new auxiliary  variable \a var named \a name
-    /// is created. \a t is the type of the variable, and \a v its value
-    QUACODE_EXPORT virtual void newAuxVarCreated(std::string name, TVarType t, TVal v) = 0;
+    /// is created. \a t is the type of the variable, and
+    /// \a min and \a max are the lower and upper bounds of the domain
+    QUACODE_EXPORT virtual void newAuxVarCreated(std::string name, TVarType t, int min, int max) = 0;
 
     /// Function called when a new 'n0*v0 + n1*v1 <cmp> v2' constraint is posted
     QUACODE_EXPORT virtual void postedPlus(int n0, std::string v0, int n1, std::string v1, TComparisonType cmp, std::string v2) = 0;
@@ -204,9 +180,9 @@ public:
     /// ====== These are to be redefined in subclass
     /// ====== as they are automatically called during search
     /// ===================================================
-    /// Function called when a new choice (\a iVar = variable index in the binder, \a val is the value)
-    /// during search
-    QUACODE_EXPORT virtual void newChoice(int iVar, TVal val) = 0;
+    /// Function called when a new choice (\a iVar = variable index in the binder,
+    /// \a min and \a max are the lower and upper bounds of the value) during search
+    QUACODE_EXPORT virtual void newChoice(int iVar, int min, int max) = 0;
     /// Function called when a new promising scenario is discovered during search
     QUACODE_EXPORT virtual void newPromisingScenario(const TScenario& instance) = 0;
     /// Function called when the search ends with a successfull strategy

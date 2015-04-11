@@ -32,23 +32,25 @@
 
 #include <quacode/asyncalgo.hh>
 
-class ParallelLogger : public AsyncAlgo {
+class Logger : public AsyncAlgo {
     /// Copy constructor set private to disable it.
-    ParallelLogger(const ParallelLogger&);
+    Logger(const Logger&);
 
 public:
     /// Main constructor, \a killThread is set to false
     /// if we want that the main thread (Quacode) waits for
     /// the end of the asynchronous working thread
-    ParallelLogger(bool killThread = true);
+    Logger(bool killThread = true);
 
     /// Function called when a new variable \a var named \a name
     /// is created at position \a idx in the binder.
-    /// \a t is the type of the variable, and \a v its value
-    virtual void newVarCreated(int idx, Gecode::TQuantifier q, std::string name, TVarType t, TVal v);
+    /// \a t is the type of the variable, and
+    /// \a min and \a max are the lower and upper bounds of the domain
+    virtual void newVarCreated(int idx, Gecode::TQuantifier q, std::string name, TVarType t, int min, int max);
     /// Function called when a new auxiliary  variable \a var named \a name
-    /// is created. \a t is the type of the variable, and \a v its value
-    virtual void newAuxVarCreated(std::string name, TVarType t, TVal v);
+    /// is created. \a t is the type of the variable, and
+    /// \a min and \a max are the lower and upper bounds of the domain
+    virtual void newAuxVarCreated(std::string name, TVarType t, int min, int max);
 
     /// Function called when a new 'n0*v0 + n1*v1 <cmp> v2' constraint is posted
     virtual void postedPlus(int n0, std::string v0, int n1, std::string v1, TComparisonType cmp, std::string v2);
@@ -57,9 +59,9 @@ public:
     /// Function called when a new 'SUM_i n_i*v_i <cmp> v0' constraint is posted
     virtual void postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, std::string v0);
 
-    /// Function called when a new choice (\a iVar = variable index in the binder, \a val is the value)
-    /// during search
-    virtual void newChoice(int iVar, TVal val);
+    /// Function called when a new choice (\a iVar = variable index in the binder,
+    /// \a min and \a max are the lower and upper bounds of the value) during search
+    virtual void newChoice(int iVar, int min, int max);
     /// Function called when a new promising scenario is discovered during search
     virtual void newPromisingScenario(const TScenario& instance);
     /// Function called when the search ends with a successfull strategy
@@ -73,7 +75,7 @@ public:
     virtual void parallelTask(void);
 
     // Main destructor
-    virtual ~ParallelLogger();
+    virtual ~Logger();
 };
 
 #endif

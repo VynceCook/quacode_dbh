@@ -41,35 +41,22 @@ forceinline void AsyncAlgo::closeModeling() {
     Gecode::Support::Thread::run(this);
 }
 
-forceinline void AsyncAlgo::newVar(Gecode::TQuantifier q, std::string name, TVarType t, TVal v) {
-    mBinderDesc.push_back({ .q = q, .name = name, .type = t, .dom = v });
+forceinline void AsyncAlgo::newVar(Gecode::TQuantifier q, std::string name, TVarType t, int min, int max) {
+    mBinderDesc.push_back({ .q = q, .name = name, .type = t, .min = min, .max = max });
     std::vector<int> domain;
     mDomainsMutex.push_back(new Gecode::Support::Mutex());
 
-    switch (v.type) {
-        case VAL_NONE:
-            GECODE_NEVER;
-        case VAL_BOOL:
-            domain.resize(1);
-            domain[0] = v.val.b;
-            break;
-        case VAL_INT:
-            domain.resize(1);
-            domain[0] = v.val.z;
-            break;
-        case VAL_INTERVAL:
-            domain.resize(v.val.bounds[1] - v.val.bounds[0] + 1);
-            for(int i=0,x=v.val.bounds[0]; x <= v.val.bounds[1]; x++,i++)
-                domain[i] = x;
-            break;
-    }
+    domain.resize(max - min + 1);
+    for(int i=0,x=min; x <= max; x++,i++)
+        domain[i] = x;
+
     mDomains.push_back(domain);
-    this->newVarCreated(mDomains.size()-1,q,name,t,v);
+    this->newVarCreated(mDomains.size()-1,q,name,t,min,max);
 }
 
-forceinline void AsyncAlgo::newAuxVar(std::string name, TVarType t, TVal v) {
-    mAuxVarDesc.push_back({ .q = EXISTS, .name = name, .type = t, .dom = v });
-    this->newAuxVarCreated(name,t,v);
+forceinline void AsyncAlgo::newAuxVar(std::string name, TVarType t, int min, int max) {
+    mAuxVarDesc.push_back({ .q = EXISTS, .name = name, .type = t, .min = min, .max = max });
+    this->newAuxVarCreated(name,t,min,max);
 }
 
 forceinline void AsyncAlgo::postPlus(int n0, std::string v0, int n1, std::string v1, TComparisonType cmp, std::string v2) {

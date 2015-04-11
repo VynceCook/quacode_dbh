@@ -95,19 +95,19 @@ class QCSPBaker : public Script, public QSpaceInfo {
         // DEBUT DESCRIPTION PB
         std::cout << "Loading problem" << std::endl;
         using namespace Int;
-        aAlgo.newVar(EXISTS,"w1",TYPE_INT,TVal(1,40));
-        aAlgo.newVar(EXISTS,"w2",TYPE_INT,TVal(1,40));
-        aAlgo.newVar(EXISTS,"w3",TYPE_INT,TVal(1,40));
-        aAlgo.newVar(EXISTS,"w4",TYPE_INT,TVal(1,40));
-        aAlgo.newVar(FORALL,"f",TYPE_INT,TVal(1,40));
-        aAlgo.newVar(EXISTS,"c1",TYPE_INT,TVal(-1,1));
-        aAlgo.newVar(EXISTS,"c2",TYPE_INT,TVal(-1,1));
-        aAlgo.newVar(EXISTS,"c3",TYPE_INT,TVal(-1,1));
-        aAlgo.newVar(EXISTS,"c4",TYPE_INT,TVal(-1,1));
-        aAlgo.newAuxVar("o1",TYPE_INT,TVal(-40,40));
-        aAlgo.newAuxVar("o2",TYPE_INT,TVal(-40,40));
-        aAlgo.newAuxVar("o3",TYPE_INT,TVal(-40,40));
-        aAlgo.newAuxVar("o4",TYPE_INT,TVal(-40,40));
+        aAlgo.newVar(EXISTS,"w1",TYPE_INT,1,40);
+        aAlgo.newVar(EXISTS,"w2",TYPE_INT,1,40);
+        aAlgo.newVar(EXISTS,"w3",TYPE_INT,1,40);
+        aAlgo.newVar(EXISTS,"w4",TYPE_INT,1,40);
+        aAlgo.newVar(FORALL,"f",TYPE_INT,1,40);
+        aAlgo.newVar(EXISTS,"c1",TYPE_INT,-1,1);
+        aAlgo.newVar(EXISTS,"c2",TYPE_INT,-1,1);
+        aAlgo.newVar(EXISTS,"c3",TYPE_INT,-1,1);
+        aAlgo.newVar(EXISTS,"c4",TYPE_INT,-1,1);
+        aAlgo.newAuxVar("o1",TYPE_INT,-40,40);
+        aAlgo.newAuxVar("o2",TYPE_INT,-40,40);
+        aAlgo.newAuxVar("o3",TYPE_INT,-40,40);
+        aAlgo.newAuxVar("o4",TYPE_INT,-40,40);
 
         IntVarArgs w(*this,4,1,40);
         IntVar f(*this,1,40);
@@ -149,12 +149,7 @@ class QCSPBaker : public Script, public QSpaceInfo {
     void eventNewInstance(void) const {
         TScenario scenario;
         for (int i=0; i<X.size(); i++)
-        {
-            if (!X[i].varimp()->assigned())
-                scenario.push_back(TVal());
-            else
-                scenario.push_back(TVal(X[i].varimp()->val()));
-        }
+            scenario.push_back({ .min = X[i].varimp()->min(), .max = X[i].varimp()->max() });
         aAlgo.newPromisingScenario(scenario);
     }
 
@@ -169,7 +164,7 @@ int main(int argc, char* argv[])
     opt.parse(argc,argv);
 
     DumbAlgorithm aAlgo;
-    //ParallelLogger aAlgo(false);
+    //Logger aAlgo(false);
     opt.aAlgo = &aAlgo;
     Script::run<QCSPBaker,QDFS,BakerOptions>(opt);
 
