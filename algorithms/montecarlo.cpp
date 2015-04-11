@@ -29,7 +29,7 @@
 
 #include <cstdlib>
 #include <ctime>
-#include <algorithms/dumb.hh>
+#include <algorithms/montecarlo.hh>
 #define OSTREAM std::cerr
 
 MonteCarlo::MonteCarlo(bool killThread) : AsyncAlgo(killThread) {
