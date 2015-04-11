@@ -91,9 +91,15 @@ forceinline void AsyncAlgo::swap(unsigned int iVar, unsigned int iV0, unsigned i
     mDomains[iVar][iV1] = aux;
 }
 
-forceinline void AsyncAlgo::copyDomain(int iVar, std::vector<int>& dest) const {
+forceinline void AsyncAlgo::copyDomainIf(int iVar, const Gecode::Int::IntView& iv, std::vector<int>& dest) const {
     Gecode::Support::Lock lck(*mDomainsMutex[iVar]);
     for (auto& x : mDomains[iVar])
-        dest.push_back(x);
+        if (iv.in(x))
+            dest.push_back(x);
+}
+
+forceinline void AsyncAlgo::copyDomain(int iVar, std::vector<int>& dest) const {
+    Gecode::Support::Lock lck(*mDomainsMutex[iVar]);
+    dest.assign(mDomains[iVar].begin(),mDomains[iVar].end());
 }
 

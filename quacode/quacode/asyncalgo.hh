@@ -36,11 +36,13 @@
 #include <queue>
 
 #include <gecode/support.hh>
+#include <gecode/int.hh>
 #include <quacode/qcsp.hh>
 
 // Forward declaration
 namespace Gecode { namespace Int { namespace Branch {
     template<int n, bool min> class QViewValuesOrderBrancher;
+    class QPosValuesOrderChoice;
 }}}
 
 #define TYPE_BOOL  0
@@ -107,6 +109,7 @@ struct TVarDesc {
 
 class AsyncAlgo : public Gecode::Support::Runnable {
     template<int n, bool min> friend class Gecode::Int::Branch::QViewValuesOrderBrancher;
+    friend class Gecode::Int::Branch::QPosValuesOrderChoice;
 
     /// Mutex for synchronization on exit
     Gecode::Support::Mutex mExit;
@@ -131,6 +134,9 @@ class AsyncAlgo : public Gecode::Support::Runnable {
     /// Wrapper function executed when the thread starts
     QUACODE_EXPORT virtual void run(void);
 
+    /// Copy the domain of the given variable \a iVar to dest.
+    /// It copies only the elemnts that are in the IntView \a iv
+    void copyDomainIf(int iVar, const Gecode::Int::IntView& iv, std::vector<int>& dest) const;
 public:
     /// Main constructor, \a killThread is set to false
     /// if we want that the main thread (Quacode) waits for

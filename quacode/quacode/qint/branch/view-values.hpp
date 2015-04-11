@@ -182,7 +182,7 @@ namespace Gecode { namespace Int { namespace Branch {
   QPosValuesOrderChoice::QPosValuesOrderChoice(const Brancher& b, int offset, const Pos& p, const AsyncAlgo& aAlgo, IntView x)
     : PosValuesChoice(b,p,x)
   {
-      aAlgo.copyDomain(offset + p.pos, domain);
+      aAlgo.copyDomainIf(offset + p.pos,x,domain);
   }
 
   forceinline
