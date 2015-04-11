@@ -27,6 +27,8 @@
  *
  */
 
+#include <cstdlib>
+#include <ctime>
 #include <algorithms/dumb.hh>
 #define OSTREAM std::cerr
 
@@ -52,12 +54,16 @@ void DumbAlgorithm::postedLinear(const std::vector<Monom>&, TComparisonType, std
 
 void DumbAlgorithm::parallelTask() {
     OSTREAM << "THREAD start" << std::endl;
+    srand(time(NULL));
     for ( ; ; ) {
         if (mainThreadFinished()) break;
-        OSTREAM << "THREAD ..." << std::endl;
-//        swap(2,8,26);
+        int iVar = rand() % mNbVars;
+        TVarDesc dVar = getVarDesc(iVar);
+        int i0 = rand() % (dVar.max - dVar.min + 1);
+        int i1 = rand() % (dVar.max - dVar.min + 1);
+        swap(iVar,i0,i1);
+        OSTREAM << "Swap(" << dVar.name << "," << i0 << "," << i1 << ")" << std::endl;
         Gecode::Support::Thread::sleep(300);
-        break;
     }
     OSTREAM << "THREAD stop" << std::endl;
 }
