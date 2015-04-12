@@ -56,11 +56,11 @@ public:
     virtual void newAuxVarCreated(const std::string& name, TVarType t, int min, int max);
 
     /// Function called when a new 'n0*v0 + n1*v1 <cmp> v2' constraint is posted
-    virtual void postedPlus(int n0, std::string v0, int n1, std::string v1, TComparisonType cmp, std::string v2);
+    virtual void postedPlus(int n0, const std::string& v0, int n1, const std::string& v1, TComparisonType cmp, const std::string& v2);
     /// Function called when a new 'n*v0*v1 <cmp> v2' constraint is posted
-    virtual void postedTimes(int n, std::string v0, std::string v1, TComparisonType cmp, std::string v2);
+    virtual void postedTimes(int n, const std::string& v0, const std::string& v1, TComparisonType cmp, const std::string& v2);
     /// Function called when a new 'SUM_i n_i*v_i <cmp> v0' constraint is posted
-    virtual void postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, std::string v0);
+    virtual void postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, const std::string& v0);
 
     /// Function called when a new choice (\a iVar = variable index in the binder,
     /// \a min and \a max are the lower and upper bounds of the value) during search

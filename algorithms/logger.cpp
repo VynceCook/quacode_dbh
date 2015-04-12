@@ -67,7 +67,7 @@ void Logger::newChoice(int iVar, int min, int max) {
 void Logger::newPromisingScenario(const TScenario& scenario) {
     bool bFirst = true;
     OSTREAM << "PR SCENARIO      = ";
-    for(auto &iv : scenario) {
+    for(const auto &iv : scenario) {
         if (!bFirst) OSTREAM << ", ";
         if (iv.min == iv.max)
             OSTREAM << iv.min;
@@ -87,24 +87,24 @@ void Logger::globalFailure() {
     OSTREAM << "GLOBAL FAILURE" << std::endl;
 }
 
-void Logger::postedPlus(int n0, std::string v0, int n1, std::string v1, TComparisonType cmp, std::string v2) {
+void Logger::postedPlus(int n0, const std::string& v0, int n1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
     static char s_ComparisonType[][20] = { "!=", "==", "<", "<=", ">", ">=" };
     OSTREAM << "POST             = ";
     OSTREAM << n0 << "*" << v0 << " + " << n1 << "*" << v1 << " " << s_ComparisonType[cmp] << " " << v2 << std::endl;
 }
 
-void Logger::postedTimes(int n, std::string v0, std::string v1, TComparisonType cmp, std::string v2) {
+void Logger::postedTimes(int n, const std::string& v0, const std::string& v1, TComparisonType cmp, const std::string& v2) {
     static char s_ComparisonType[][20] = { "!=", "==", "<", "<=", ">", ">=" };
     OSTREAM << "POST             = ";
     if (n != 1) OSTREAM << n << " * ";
     OSTREAM << v0 << " * " << v1 << " " << s_ComparisonType[cmp] << " " << v2 << std::endl;
 }
 
-void Logger::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, std::string v0) {
+void Logger::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, const std::string& v0) {
     bool bFirst = true;
     static char s_ComparisonType[][20] = { "!=", "==", "<", "<=", ">", ">=" };
     OSTREAM << "POST             = ";
-    for(auto &m : poly) {
+    for(const auto &m : poly) {
         if (!bFirst) OSTREAM << " + ";
         OSTREAM << m.coeff << "*" << m.varName;
         bFirst = false;

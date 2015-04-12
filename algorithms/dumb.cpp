@@ -50,8 +50,8 @@ void DumbAlgorithm::strategyFound() { }
 void DumbAlgorithm::newFailure() { }
 void DumbAlgorithm::globalFailure() { }
 
-void DumbAlgorithm::postedTimes(int, std::string, std::string, TComparisonType, std::string) { }
-void DumbAlgorithm::postedLinear(const std::vector<Monom>&, TComparisonType, std::string) { }
+void DumbAlgorithm::postedTimes(int, const std::string&, const std::string&, TComparisonType, const std::string&) { }
+void DumbAlgorithm::postedLinear(const std::vector<Monom>&, TComparisonType, const std::string&) { }
 
 void DumbAlgorithm::parallelTask() {
     OSTREAM << "THREAD start" << std::endl;

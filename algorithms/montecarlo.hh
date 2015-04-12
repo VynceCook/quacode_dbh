@@ -45,13 +45,14 @@ class MonteCarlo : public AsyncAlgo {
     /// Vector of domains of variables
     std::vector< Interval > mDomains;
 
-    /// Linear constraints of the problem
+    /// Constraints of the problem
     struct MX {
-        int c;
+        int coeff;
         int iVar;
     };
     typedef std::vector< MX > TConstraint;;
-    std::vector< TConstraint > mConstraints;
+    std::vector< TConstraint > mLinearConstraints;
+    std::vector< TConstraint > mTimesConstraints;
 
     /// Function that returns the index of the variable
     /// \a name in our data structure. It returns -1 if the variable
@@ -60,7 +61,11 @@ class MonteCarlo : public AsyncAlgo {
 
     /// Eval the sum of all constraints of the problem
     /// with the given instance \a instance
-    int evalConstraints(const std::vector<int>& instance) const;
+    unsigned long int evalConstraints(const std::vector<int>& instance) const;
+
+    /// Fill the given instance \a instance with
+    /// random numbers
+    void generateInstance(std::vector<int>& instance);
 
 public:
     /// Main constructor, \a killThread is set to false
@@ -79,9 +84,9 @@ public:
     virtual void newAuxVarCreated(const std::string& name, TVarType t, int min, int max);
 
     /// Function called when a new 'n*v0*v1 <cmp> v2' constraint is posted
-    virtual void postedTimes(int n, std::string v0, std::string v1, TComparisonType cmp, std::string v2);
+    virtual void postedTimes(int n, const std::string& v0, const std::string& v1, TComparisonType cmp, const std::string& v2);
     /// Function called when a new 'SUM_i n_i*v_i <cmp> v0' constraint is posted
-    virtual void postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, std::string v0);
+    virtual void postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, const std::string& v0);
 
     /// Function called when a new choice (\a iVar = variable index in the binder,
     /// \a min and \a max are the lower and upper bounds of the value) during search
