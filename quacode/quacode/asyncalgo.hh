@@ -68,8 +68,8 @@ typedef std::vector<Interval> TScenario;
 
 // Structure which represents a monome in a polynome
 struct Monom {
-    int c;
-    std::string var;
+    int coeff;
+    std::string varName;
 };
 
 // Structure which represents the description of a variable
@@ -93,11 +93,6 @@ class AsyncAlgo : public Gecode::Support::Runnable {
     /// or wait for its end
     bool mbKillThread;
 
-    /// Description of each variable of the binder
-    std::vector<TVarDesc> mBinderDesc;
-    /// Description of each auxiliary variable
-    std::vector<TVarDesc> mAuxVarDesc;
-
     /// Stores the ordered domain of each variable of the binder
     std::vector< std::vector<int> > mDomains;
     /// Mutex for access to mDomains
@@ -120,10 +115,6 @@ public:
     // Main destructor
     QUACODE_EXPORT virtual ~AsyncAlgo();
 
-    /// Returns the description of a variable of the binder which
-    /// corresponds to the index \a iVar
-    QUACODE_EXPORT const TVarDesc& getVarDesc(int iVar) const;
-
     /// Returns true is the main thread (i.e. Quacode finished its work)
     QUACODE_EXPORT bool mainThreadFinished() const;
 
@@ -134,9 +125,9 @@ public:
     /// ====== These are to be called during modeling stage
     /// ===================================================
     /// Quacode adds a new variable \a var in the binder
-    QUACODE_EXPORT void newVar(Gecode::TQuantifier q, std::string name, TVarType t, int min, int max);
+    QUACODE_EXPORT void newVar(Gecode::TQuantifier q, const std::string& name, TVarType t, int min, int max);
     /// Quacode adds a new variable auxiliary \a var
-    QUACODE_EXPORT void newAuxVar(std::string name, TVarType t, int min, int max);
+    QUACODE_EXPORT void newAuxVar(const std::string& name, TVarType t, int min, int max);
 
     /// Quacode post a new n0*v0 + n1*v1 <cmp> v2
     QUACODE_EXPORT void postPlus(int n0, std::string v0, int n1, std::string v1, TComparisonType cmp, std::string v2);
@@ -152,18 +143,18 @@ public:
     /// is created at position \a idx in the binder.
     /// \a t is the type of the variable, and
     /// \a min and \a max are the lower and upper bounds of the domain
-    QUACODE_EXPORT virtual void newVarCreated(int idx, Gecode::TQuantifier q, std::string name, TVarType t, int min, int max) = 0;
+    QUACODE_EXPORT virtual void newVarCreated(int idx, Gecode::TQuantifier q, const std::string& name, TVarType t, int min, int max) = 0;
     /// Function called when a new auxiliary  variable \a var named \a name
     /// is created. \a t is the type of the variable, and
     /// \a min and \a max are the lower and upper bounds of the domain
-    QUACODE_EXPORT virtual void newAuxVarCreated(std::string name, TVarType t, int min, int max) = 0;
+    QUACODE_EXPORT virtual void newAuxVarCreated(const std::string& name, TVarType t, int min, int max) = 0;
 
     /// Function called when a new 'n0*v0 + n1*v1 <cmp> v2' constraint is posted
-    QUACODE_EXPORT virtual void postedPlus(int n0, std::string v0, int n1, std::string v1, TComparisonType cmp, std::string v2) = 0;
+    QUACODE_EXPORT virtual void postedPlus(int n0, std::string v0, int n1, std::string v1, TComparisonType cmp, std::string v2);
     /// Function called when a new 'n*v0*v1 <cmp> v2' constraint is posted
-    QUACODE_EXPORT virtual void postedTimes(int n, std::string v0, std::string v1, TComparisonType cmp, std::string v2) = 0;
+    QUACODE_EXPORT virtual void postedTimes(int n, std::string v0, std::string v1, TComparisonType cmp, std::string v2);
     /// Function called when a new 'SUM_i n_i*v_i <cmp> v0' constraint is posted
-    QUACODE_EXPORT virtual void postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, std::string v0) = 0;
+    QUACODE_EXPORT virtual void postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, std::string v0);
 
     /// ====== The closeModeling function must be called at the
     /// ====== end of the modeling stage. It will ends the modeling

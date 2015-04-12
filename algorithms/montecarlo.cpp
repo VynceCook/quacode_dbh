@@ -37,20 +37,64 @@ MonteCarlo::MonteCarlo(bool killThread) : AsyncAlgo(killThread) {
 }
 MonteCarlo::~MonteCarlo() { }
 
-void MonteCarlo::newVarCreated(int, Gecode::TQuantifier, std::string, TVarType, int, int) {
+void MonteCarlo::newVarCreated(int, Gecode::TQuantifier, const std::string& name, TVarType, int min, int max) {
     mNbVars++;
+    mVarNames.push_back(name);
+    mDomains.push_back({min, max});
 }
-
-void MonteCarlo::newAuxVarCreated(std::string, TVarType, int, int) { }
+void MonteCarlo::newAuxVarCreated(const std::string& name, TVarType, int min, int max) {
+    mNbVars++;
+    mVarNames.push_back(name);
+    mDomains.push_back({min, max});
+}
 void MonteCarlo::newChoice(int, int, int) { }
 void MonteCarlo::newPromisingScenario(const TScenario&) { }
 void MonteCarlo::strategyFound() { }
 void MonteCarlo::newFailure() { }
 void MonteCarlo::globalFailure() { }
 
-void MonteCarlo::postedPlus(int, std::string, int, std::string, TComparisonType, std::string) { }
-void MonteCarlo::postedTimes(int, std::string, std::string, TComparisonType, std::string) { }
-void MonteCarlo::postedLinear(const std::vector<Monom>&, TComparisonType, std::string) { }
+int MonteCarlo::getIdxVar(const std::string& name) const {
+    int i = 0;
+    for (auto& vName : mVarNames) {
+        if (name == vName) return i;
+        i++;
+    }
+    return -1;
+}
+
+void MonteCarlo::postedTimes(int, std::string, std::string, TComparisonType, std::string) {
+}
+
+void MonteCarlo::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, std::string oName) {
+    if (cmp != CMP_EQ) {
+        OSTREAM << "Only == is implemented for linear constraint" << std::endl;
+        GECODE_NEVER
+    }
+    TConstraint newConstraint;
+    newConstraint.reserve(poly.size() + 1);
+    int iVar = -1;
+    int i = 0;
+    for (auto& m : poly) {
+        iVar = getIdxVar(m.varName);
+        if (iVar == -1) {
+            OSTREAM << "Variable '" << m.varName << "' is not defined" << std::endl;
+            GECODE_NEVER
+        }
+        newConstraint[i] = { m.coeff, iVar };
+        i++;
+    }
+    iVar = getIdxVar(oName);
+    if (iVar == -1) {
+        OSTREAM << "Variable '" << oName << "' is not defined" << std::endl;
+        GECODE_NEVER
+    }
+    newConstraint[i] = { -1, iVar };
+    mConstraints.push_back(newConstraint);
+}
+
+int MonteCarlo::evalConstraints(const std::vector<int>& instance) const {
+    return 0;
+}
 
 void MonteCarlo::parallelTask() {
     OSTREAM << "THREAD start" << std::endl;
@@ -58,11 +102,6 @@ void MonteCarlo::parallelTask() {
     for ( ; ; ) {
         if (mainThreadFinished()) break;
         int iVar = rand() % mNbVars;
-        TVarDesc dVar = getVarDesc(iVar);
-        int i0 = rand() % (dVar.max - dVar.min + 1);
-        int i1 = rand() % (dVar.max - dVar.min + 1);
-        swap(iVar,i0,i1);
-        OSTREAM << "Swap(" << dVar.name << "," << i0 << "," << i1 << ")" << std::endl;
         Gecode::Support::Thread::sleep(300);
     }
     OSTREAM << "THREAD stop" << std::endl;

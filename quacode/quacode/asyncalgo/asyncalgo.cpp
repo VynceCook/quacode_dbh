@@ -27,6 +27,7 @@
  *
  */
 
+#include <iostream>
 #include <quacode/asyncalgo.hh>
 
 AsyncAlgo::AsyncAlgo(bool killThread)
@@ -53,3 +54,15 @@ void AsyncAlgo::run() {
     dummy.wait();
 }
 
+void AsyncAlgo::postedPlus(int, std::string, int, std::string, TComparisonType, std::string) {
+    std::cerr << "Plus constraint is not implemented" << std::endl;
+    GECODE_NEVER
+}
+void AsyncAlgo::postedTimes(int, std::string, std::string, TComparisonType, std::string) {
+    std::cerr << "Times constraint is not implemented" << std::endl;
+    GECODE_NEVER
+}
+void AsyncAlgo::postedLinear(const std::vector<Monom>&, TComparisonType, std::string) {
+    std::cerr << "Linear constraint is not implemented" << std::endl;
+    GECODE_NEVER
+}

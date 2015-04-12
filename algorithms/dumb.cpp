@@ -37,18 +37,19 @@ DumbAlgorithm::DumbAlgorithm(bool killThread) : AsyncAlgo(killThread) {
 }
 DumbAlgorithm::~DumbAlgorithm() { }
 
-void DumbAlgorithm::newVarCreated(int, Gecode::TQuantifier, std::string, TVarType, int, int) {
+void DumbAlgorithm::newVarCreated(int, Gecode::TQuantifier, const std::string& name, TVarType, int min, int max) {
     mNbVars++;
+    mVarNames.push_back(name);
+    mDomains.push_back({min, max});
 }
 
-void DumbAlgorithm::newAuxVarCreated(std::string, TVarType, int, int) { }
+void DumbAlgorithm::newAuxVarCreated(const std::string&, TVarType, int, int) { }
 void DumbAlgorithm::newChoice(int, int, int) { }
 void DumbAlgorithm::newPromisingScenario(const TScenario&) { }
 void DumbAlgorithm::strategyFound() { }
 void DumbAlgorithm::newFailure() { }
 void DumbAlgorithm::globalFailure() { }
 
-void DumbAlgorithm::postedPlus(int, std::string, int, std::string, TComparisonType, std::string) { }
 void DumbAlgorithm::postedTimes(int, std::string, std::string, TComparisonType, std::string) { }
 void DumbAlgorithm::postedLinear(const std::vector<Monom>&, TComparisonType, std::string) { }
 
@@ -58,11 +59,10 @@ void DumbAlgorithm::parallelTask() {
     for ( ; ; ) {
         if (mainThreadFinished()) break;
         int iVar = rand() % mNbVars;
-        TVarDesc dVar = getVarDesc(iVar);
-        int i0 = rand() % (dVar.max - dVar.min + 1);
-        int i1 = rand() % (dVar.max - dVar.min + 1);
+        int i0 = rand() % (mDomains[iVar].max - mDomains[iVar].min + 1);
+        int i1 = rand() % (mDomains[iVar].max - mDomains[iVar].min + 1);
         swap(iVar,i0,i1);
-        OSTREAM << "Swap(" << dVar.name << "," << i0 << "," << i1 << ")" << std::endl;
+        OSTREAM << "Swap(" << mVarNames[iVar] << "," << i0 << "," << i1 << ")" << std::endl;
         Gecode::Support::Thread::sleep(300);
     }
     OSTREAM << "THREAD stop" << std::endl;

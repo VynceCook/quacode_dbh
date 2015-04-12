@@ -29,10 +29,6 @@
 
 #include <cassert>
 
-forceinline const TVarDesc& AsyncAlgo::getVarDesc(int iVar) const {
-    return mBinderDesc[iVar];
-}
-
 forceinline bool AsyncAlgo::mainThreadFinished() const {
     return mbMainThreadFinished;
 }
@@ -41,8 +37,7 @@ forceinline void AsyncAlgo::closeModeling() {
     Gecode::Support::Thread::run(this);
 }
 
-forceinline void AsyncAlgo::newVar(Gecode::TQuantifier q, std::string name, TVarType t, int min, int max) {
-    mBinderDesc.push_back({ .q = q, .name = name, .type = t, .min = min, .max = max });
+forceinline void AsyncAlgo::newVar(Gecode::TQuantifier q, const std::string& name, TVarType t, int min, int max) {
     std::vector<int> domain;
     mDomainsMutex.push_back(new Gecode::Support::Mutex());
 
@@ -54,8 +49,7 @@ forceinline void AsyncAlgo::newVar(Gecode::TQuantifier q, std::string name, TVar
     this->newVarCreated(mDomains.size()-1,q,name,t,min,max);
 }
 
-forceinline void AsyncAlgo::newAuxVar(std::string name, TVarType t, int min, int max) {
-    mAuxVarDesc.push_back({ .q = EXISTS, .name = name, .type = t, .min = min, .max = max });
+forceinline void AsyncAlgo::newAuxVar(const std::string& name, TVarType t, int min, int max) {
     this->newAuxVarCreated(name,t,min,max);
 }
 

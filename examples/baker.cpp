@@ -166,7 +166,7 @@ int main(int argc, char* argv[])
 
     //Logger aAlgo(false);
     //DumbAlgorithm aAlgo;
-    MonteCarlo aAlgo;
+    MonteCarlo aAlgo(false);
     opt.aAlgo = &aAlgo;
     Script::run<QCSPBaker,QDFS,BakerOptions>(opt);
 

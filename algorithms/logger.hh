@@ -33,6 +33,9 @@
 #include <quacode/asyncalgo.hh>
 
 class Logger : public AsyncAlgo {
+    /// Vector of name of variables (the binder variables)
+    std::vector< std::string > mVarNames;
+
     /// Copy constructor set private to disable it.
     Logger(const Logger&);
 
@@ -46,11 +49,11 @@ public:
     /// is created at position \a idx in the binder.
     /// \a t is the type of the variable, and
     /// \a min and \a max are the lower and upper bounds of the domain
-    virtual void newVarCreated(int idx, Gecode::TQuantifier q, std::string name, TVarType t, int min, int max);
+    virtual void newVarCreated(int idx, Gecode::TQuantifier q, const std::string& name, TVarType t, int min, int max);
     /// Function called when a new auxiliary  variable \a var named \a name
     /// is created. \a t is the type of the variable, and
     /// \a min and \a max are the lower and upper bounds of the domain
-    virtual void newAuxVarCreated(std::string name, TVarType t, int min, int max);
+    virtual void newAuxVarCreated(const std::string& name, TVarType t, int min, int max);
 
     /// Function called when a new 'n0*v0 + n1*v1 <cmp> v2' constraint is posted
     virtual void postedPlus(int n0, std::string v0, int n1, std::string v1, TComparisonType cmp, std::string v2);

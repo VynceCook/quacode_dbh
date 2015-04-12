@@ -36,7 +36,8 @@ Logger::~Logger() {
     OSTREAM << "OBJECT DESTROYED" << std::endl;
 }
 
-void Logger::newVarCreated(int idx, Gecode::TQuantifier q, std::string name, TVarType t, int min, int max) {
+void Logger::newVarCreated(int idx, Gecode::TQuantifier q, const std::string& name, TVarType t, int min, int max) {
+    mVarNames.push_back(name);
     OSTREAM << "VAR_BINDER       =";
     OSTREAM << " var(" << ((q==EXISTS)?"E":"F") << "," << ((t==TYPE_BOOL)?"B":"I") << "," << name << " # " << idx;
     if (min == max)
@@ -46,7 +47,7 @@ void Logger::newVarCreated(int idx, Gecode::TQuantifier q, std::string name, TVa
     OSTREAM << ")" << std::endl;
 }
 
-void Logger::newAuxVarCreated(std::string name, TVarType t, int min, int max) {
+void Logger::newAuxVarCreated(const std::string& name, TVarType t, int min, int max) {
     OSTREAM << "VAR_AUX          =";
     OSTREAM << " var(E," << ((t==TYPE_BOOL)?"B":"I") << "," << name;
     if (min == max)
@@ -59,9 +60,9 @@ void Logger::newAuxVarCreated(std::string name, TVarType t, int min, int max) {
 void Logger::newChoice(int iVar, int min, int max) {
     OSTREAM << "CHOICE           = ";
     if (min == max)
-        OSTREAM << getVarDesc(iVar).name << " # " << min << std::endl;
+        OSTREAM << mVarNames[iVar] << " # " << min << std::endl;
     else
-        OSTREAM << getVarDesc(iVar).name << " # [" << min << ";" << max << "]" << std::endl;
+        OSTREAM << mVarNames[iVar] << " # [" << min << ";" << max << "]" << std::endl;
 }
 void Logger::newPromisingScenario(const TScenario& scenario) {
     bool bFirst = true;
@@ -105,7 +106,7 @@ void Logger::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, s
     OSTREAM << "POST             = ";
     for(auto &m : poly) {
         if (!bFirst) OSTREAM << " + ";
-        OSTREAM << m.c << "*" << m.var;
+        OSTREAM << m.coeff << "*" << m.varName;
         bFirst = false;
     }
     OSTREAM << " " << s_ComparisonType[cmp] << " " << v0 << std::endl;
