@@ -145,6 +145,7 @@ SET(ALGORITHMS_SRCS
 )
 SET(CALLBACK_EXAMPLES_SRCS
     examples/baker.cpp
+    examples/nim-fibo.cpp
 )
 
 SOURCE_GROUP("Hpp Files" REGULAR_EXPRESSION ".hpp")

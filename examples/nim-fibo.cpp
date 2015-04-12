@@ -41,8 +41,7 @@
 #include <gecode/minimodel.hh>
 #include <gecode/driver.hh>
 
-#include <sibus/receivers/receiver-out.hh>
-#include <sibus/receivers/receiver-nodecount.hh>
+#include <algorithms/logger.hh>
 
 using namespace Gecode;
 
@@ -64,42 +63,45 @@ namespace Gecode { namespace Driver {
  */
 class NimFiboOptions : public Options {
 public:
-  int n; /// Parameter to be given on the command line
-  /// Use cut or not
-  Gecode::Driver::BoolOption _cut;
-  /// Initialize options for example with name \a s
-  NimFiboOptions(const char* s, int n0)
-    : Options(s), n(n0),
-      _cut("-cut","Use cut in problem model",true) {
-        add(_cut);
-      }
-  /// Parse options from arguments \a argv (number is \a argc)
-  void parse(int& argc, char* argv[]) {
-    Options::parse(argc,argv);
-    if (argc < 2)
-      return;
-    n = atoi(argv[1]);
-  }
-  /// Print help message
-  virtual void help(void) {
-    Options::help();
-    std::cerr << "\t(unsigned int) default: " << n << std::endl
-              << "\t\tnumber of initial matchs" << std::endl;
-  }
-  /// Return true if cut must be used
-  bool cut(void) const {
-    return _cut.value();
-  }
+    /// Asynchronous algorithm which will cooperate with QuaCode
+    AsyncAlgo *aAlgo;
+
+    int n; /// Parameter to be given on the command line
+    /// Use cut or not
+    Gecode::Driver::BoolOption _cut;
+    /// Initialize options for example with name \a s
+    NimFiboOptions(const char* s, int n0)
+        : Options(s), n(n0),
+        _cut("-cut","Use cut in problem model",true) {
+            add(_cut);
+        }
+    /// Parse options from arguments \a argv (number is \a argc)
+    void parse(int& argc, char* argv[]) {
+        Options::parse(argc,argv);
+        if (argc < 2)
+            return;
+        n = atoi(argv[1]);
+    }
+    /// Print help message
+    virtual void help(void) {
+        Options::help();
+        std::cerr << "\t(unsigned int) default: " << n << std::endl
+            << "\t\tnumber of initial matchs" << std::endl;
+    }
+    /// Return true if cut must be used
+    bool cut(void) const {
+        return _cut.value();
+    }
 };
 
 /// Succeed the space
 static void gf_success(Space& home) {
-  Space::Branchers b(home);
-  while (b()) {
-    BrancherHandle bh(b.brancher());
-    ++b;
-    bh.kill(home);
-  }
+    Space::Branchers b(home);
+    while (b()) {
+        BrancherHandle bh(b.brancher());
+        ++b;
+        bh.kill(home);
+    }
 }
 
 /// Dummy function
@@ -107,111 +109,101 @@ static void gf_dummy(Space& ) { }
 
 /// Adding cut
 static void cut(Space& home, const BoolExpr& expr) {
-  BoolVar o(home,0,1);
-  rel(home, o == expr);
-  when(home, o, &gf_success, &gf_dummy);
+    BoolVar o(home,0,1);
+    rel(home, o == expr);
+    when(home, o, &gf_success, &gf_dummy);
 }
 
 class QCSPNimFibo : public Script, public QSpaceInfo {
-  IntVarArray X;
+    IntVarArray X;
 
 public:
 
-  QCSPNimFibo(const NimFiboOptions& opt) : Script(opt), QSpaceInfo()
-  {
-    // DEBUT DESCRIPTION PB
-    std::cout << "Loading problem" << std::endl;
-    using namespace Int;
-    // Number of matches
-    int NMatchs = opt.n;
-    int nIterations = (NMatchs%2)?NMatchs:NMatchs+1;
-
-    IntVarArgs x;
-    SIBus::instance().sendVar(TVarBinder(EXISTS,"x1",TYPE_INT,TVal(1,NMatchs-1)));
-    X = IntVarArray(*this,nIterations,1,NMatchs-1);
-    x << X[0];
-
-    BoolVar o_im1(*this,1,1);
-    BoolExpr cutExpr1(BoolVar(*this,1,1));
-    BoolExpr cutExpr2(BoolVar(*this,1,1));
-    //branch(*this, X[0], INT_VAR_NONE(), INT_VALUES_MIN());
-    branch(*this, X[0], INT_VAR_NONE(), INT_VAL_MIN());
-
-    for (int i=1; i < nIterations; i++) {
-      BoolVar oi(*this,0,1), o1(*this,0,1), o2(*this,0,1);
-
-      x << X[i];
-
-      rel(*this, X[i], IRT_LQ, expr(*this, 2*X[i-1]), o1);
-      linear(*this, x, IRT_LQ, NMatchs, o2);
-
-      if (i%2) {
-        // Universal Player
-        setForAll(*this,X[i]);
-        std::stringstream ss_y; ss_y << "y" << i/2 + 1;
-        SIBus::instance().sendVar(TVarBinder(FORALL,ss_y.str(),TYPE_INT,TVal(1,NMatchs-1)));
-        rel(*this, o_im1 == ((o1 && o2) >> oi));
-        // Adding Cut
-        if (opt.cut())
-          cut(*this, cutExpr1 && cutExpr2 && !(o1 && o2));  // Universal player can't play
-        //branch(*this, X[i], INT_VAR_NONE(), INT_VALUES_MIN());
-        branch(*this, X[i], INT_VAR_NONE(), INT_VAL_MIN());
-      } else {
-        // Existantial Player
-        std::stringstream ss_x; ss_x << "x" << i/2 + 1;
-        SIBus::instance().sendVar(TVarBinder(EXISTS,ss_x.str(),TYPE_INT,TVal(1,NMatchs-1)));
-        rel(*this, o_im1 == (o1 && o2 && oi));
-        //branch(*this, X[i], INT_VAR_NONE(), INT_VALUES_MIN());
-        branch(*this, X[i], INT_VAR_NONE(), INT_VAL_MIN());
-      }
-      cutExpr1 = cutExpr1 && o1;
-      cutExpr2 = o2;
-      o_im1 = oi;
-    }
-
-    // FIN DESCRIPTION PB
-    SIBus::instance().sendCloseModeling();
-  }
-
-  QCSPNimFibo(bool share, QCSPNimFibo& p)
-    : Script(share,p), QSpaceInfo(*this,share,p)
-  {
-    X.update(*this,share,p.X);
-  }
-
-  virtual Space* copy(bool share) { return new QCSPNimFibo(share,*this); }
-
-  void eventNewInstance(void) const {
-    TInstance instance;
-    for (int i=0; i<X.size(); i++)
+    QCSPNimFibo(const NimFiboOptions& opt) : Script(opt), QSpaceInfo(*opt.aAlgo)
     {
-      if (!X[i].varimp()->assigned())
-        instance.push_back(TVal());
-      else
-        instance.push_back(TVal(X[i].varimp()->val()));
-    }
-    SIBus::instance().sendInstance(instance);
-  }
+        // DEBUT DESCRIPTION PB
+        std::cout << "Loading problem" << std::endl;
+        using namespace Int;
+        // Number of matches
+        int NMatchs = opt.n;
+        int nIterations = (NMatchs%2)?NMatchs:NMatchs+1;
 
-  void print(std::ostream& os) const {
-    strategyPrint(os);
-  }
+        IntVarArgs x;
+        aAlgo.newVar(EXISTS,"x1",TYPE_INT,1,NMatchs-1);
+        X = IntVarArray(*this,nIterations,1,NMatchs-1);
+        x << X[0];
+
+        BoolVar o_im1(*this,1,1);
+        BoolExpr cutExpr1(BoolVar(*this,1,1));
+        BoolExpr cutExpr2(BoolVar(*this,1,1));
+        //branch(*this, X[0], INT_VAR_NONE(), INT_VALUES_MIN());
+        branch(*this, X[0], INT_VAR_NONE(), INT_VAL_MIN());
+
+        for (int i=1; i < nIterations; i++) {
+            BoolVar oi(*this,0,1), o1(*this,0,1), o2(*this,0,1);
+
+            x << X[i];
+
+            rel(*this, X[i], IRT_LQ, expr(*this, 2*X[i-1]), o1);
+            linear(*this, x, IRT_LQ, NMatchs, o2);
+
+            if (i%2) {
+                // Universal Player
+                setForAll(*this,X[i]);
+                std::stringstream ss_y; ss_y << "y" << i/2 + 1;
+                aAlgo.newVar(FORALL,ss_y.str(),TYPE_INT,1,NMatchs-1);
+                rel(*this, o_im1 == ((o1 && o2) >> oi));
+                // Adding Cut
+                if (opt.cut())
+                    cut(*this, cutExpr1 && cutExpr2 && !(o1 && o2));  // Universal player can't play
+                //branch(*this, X[i], INT_VAR_NONE(), INT_VALUES_MIN());
+                branch(*this, X[i], INT_VAR_NONE(), INT_VAL_MIN());
+            } else {
+                // Existantial Player
+                std::stringstream ss_x; ss_x << "x" << i/2 + 1;
+                aAlgo.newVar(EXISTS,ss_x.str(),TYPE_INT,1,NMatchs-1);
+                rel(*this, o_im1 == (o1 && o2 && oi));
+                //branch(*this, X[i], INT_VAR_NONE(), INT_VALUES_MIN());
+                branch(*this, X[i], INT_VAR_NONE(), INT_VAL_MIN());
+            }
+            cutExpr1 = cutExpr1 && o1;
+            cutExpr2 = o2;
+            o_im1 = oi;
+        }
+
+        // FIN DESCRIPTION PB
+        aAlgo.closeModeling();
+    }
+
+    QCSPNimFibo(bool share, QCSPNimFibo& p)
+        : Script(share,p), QSpaceInfo(*this,share,p)
+    {
+        X.update(*this,share,p.X);
+    }
+
+    virtual Space* copy(bool share) { return new QCSPNimFibo(share,*this); }
+
+    void eventNewInstance(void) const {
+        TScenario scenario;
+        for (int i=0; i<X.size(); i++)
+            scenario.push_back({ .min = X[i].varimp()->min(), .max = X[i].varimp()->max() });
+        aAlgo.newPromisingScenario(scenario);
+    }
+
+    void print(std::ostream& os) const {
+        strategyPrint(os);
+    }
 };
 
 int main(int argc, char* argv[])
 {
-  ProcessSTDOUT pStdout;
-  ProcessNodeCount pNodeCount;
+    NimFiboOptions opt("QCSP Nim-Fibo",3);
+    opt.parse(argc,argv);
 
-  SIBus::create();
-  SIBus::instance().addReceiver(pStdout);
-  SIBus::instance().addReceiver(pNodeCount);
+    Logger aAlgo(false);
+    opt.aAlgo = &aAlgo;
+    Script::run<QCSPNimFibo,QDFS,NimFiboOptions>(opt);
 
-  NimFiboOptions opt("QCSP Nim-Fibo",3);
-  opt.parse(argc,argv);
-  Script::run<QCSPNimFibo,QDFS,NimFiboOptions>(opt);
-
-  SIBus::kill();
-  return 0;
+    return 0;
 }
 
