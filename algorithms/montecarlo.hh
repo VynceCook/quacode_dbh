@@ -38,12 +38,20 @@ class MonteCarlo : public AsyncAlgo {
     /// Copy constructor set private to disable it.
     MonteCarlo(const MonteCarlo&);
 
+    /// Variables of the problem
+    struct VarDesc {
+        int idxInBinder;
+        Gecode::TQuantifier q;
+        std::string name;
+        TVarType type;
+        Interval dom;
+    };
     /// Stores the number of variables
     int mNbVars;
-    /// Vector of name of variables
-    std::vector< std::string > mVarNames;
-    /// Vector of domains of variables
-    std::vector< Interval > mDomains;
+    /// Number of variables of the binder
+    int mNbBinderVars;
+    /// Vector of variables
+    std::vector< VarDesc > mVars;
 
     /// Constraints of the problem
     struct MX {
@@ -54,6 +62,9 @@ class MonteCarlo : public AsyncAlgo {
     std::vector< TConstraint > mLinearConstraints;
     std::vector< TConstraint > mTimesConstraints;
 
+    /// Array of conflicts evaluations
+    std::vector< std::vector<int> > mConflicts;
+
     /// Function that returns the index of the variable
     /// \a name in our data structure. It returns -1 if the variable
     /// is undefined
@@ -61,7 +72,7 @@ class MonteCarlo : public AsyncAlgo {
 
     /// Eval the sum of all constraints of the problem
     /// with the given instance \a instance
-    unsigned long int evalConstraints(const std::vector<int>& instance) const;
+    unsigned long int evalConstraints(const std::vector<int>& instance);
 
     /// Fill the given instance \a instance with
     /// random numbers
