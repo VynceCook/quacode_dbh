@@ -50,10 +50,10 @@ namespace Gecode { namespace Driver {
     /// Specialization for QDFS
     template<typename S>
         class GistEngine<QDFS<S> > {
-            public:
-                static void explore(S* root, const Gist::Options& opt) {
-                    (void) Gist::explore(root, false, opt);
-                }
+        public:
+            static void explore(S* root, const Gist::Options& opt) {
+                (void) Gist::explore(root, false, opt);
+            }
         };
 }}
 #endif
@@ -63,38 +63,37 @@ namespace Gecode { namespace Driver {
  * \brief Options taking one additional parameter
  */
 class RndQCSPOptions : public Options {
-    public:
-        /// Asynchronous algorithm which will cooperate with QuaCode
-        AsyncAlgo *aAlgo;
-        /// Print strategy or not
-        Gecode::Driver::BoolOption _printStrategy;
-        /// File name of bench
-        Gecode::Driver::StringValueOption _file;
-        /// Initialize options for example with name \a s
-        RndQCSPOptions(const char* s)
-            : Options(s),
-            _printStrategy("-printStrategy","Print strategy",false),
-            _file("-file","File name of benchmark file")
+public:
+    /// Asynchronous algorithm which will cooperate with QuaCode
+    AsyncAlgo *aAlgo;
+    /// Print strategy or not
+    Gecode::Driver::BoolOption _printStrategy;
+    /// File name of bench
+    Gecode::Driver::StringValueOption _file;
+    /// Initialize options for example with name \a s
+    RndQCSPOptions(const char* s)
+        : Options(s),
+        _printStrategy("-printStrategy","Print strategy",false),
+        _file("-file","File name of benchmark file")
     {
         add(_printStrategy);
         add(_file);
     }
-        /// Return true if the strategy must be printed
-        bool printStrategy(void) const {
-            return _printStrategy.value();
-        }
-        /// Return file name
-        const char *file(void) const {
-            return _file.value();
-        }
+    /// Return true if the strategy must be printed
+    bool printStrategy(void) const {
+        return _printStrategy.value();
+    }
+    /// Return file name
+    const char *file(void) const {
+        return _file.value();
+    }
 };
 
 class RndQCSP : public Script, public QSpaceInfo {
     IntVarArray X;
 
-    public:
-    RndQCSP(const RndQCSPOptions& opt) : Script(opt), QSpaceInfo(*opt.aAlgo)
-    {
+public:
+    RndQCSP(const RndQCSPOptions& opt) : Script(opt), QSpaceInfo(*opt.aAlgo) {
         std::cout << "Loading problem" << std::endl;
         using namespace Int;
 

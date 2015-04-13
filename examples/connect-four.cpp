@@ -51,10 +51,10 @@ namespace Gecode { namespace Driver {
     /// Specialization for QDFS
     template<typename S>
         class GistEngine<QDFS<S> > {
-            public:
-                static void explore(S* root, const Gist::Options& opt) {
-                    (void) Gist::explore(root, false, opt);
-                }
+        public:
+            static void explore(S* root, const Gist::Options& opt) {
+                (void) Gist::explore(root, false, opt);
+            }
         };
 }}
 #endif
@@ -63,56 +63,56 @@ namespace Gecode { namespace Driver {
  * \brief Options taking one additional parameter
  */
 class ConnectFourOptions : public Options {
-    protected:
-        /// Model name
-        Gecode::Driver::StringOption _QCSPmodel;
-        /// Heuristic in branching
-        Gecode::Driver::BoolOption _heuristic;
-        /// File name of recorded moves
-        Gecode::Driver::StringValueOption _file;
-        /// Optional number of rows
-        Gecode::Driver::UnsignedIntOption _row;
-        /// Optional number of cols
-        Gecode::Driver::UnsignedIntOption _col;
-    public:
-        /// Asynchronous algorithm which will cooperate with QuaCode
-        AsyncAlgo *aAlgo;
-        /// Initialize options for example with name \a s
-        ConnectFourOptions(const char* s)
-            : Options(s), _QCSPmodel("-QCSPmodel","Name of the model used for modeling problem",3),
-            _heuristic("-heuristic","Use heuristic when branching (only for model + and ++)",true),
-            _file("-file","File name of recorded moves"),
-            _row("-row","Number of rows (minimum 4)",6),
-            _col("-col","Number of cols (minimum 4)",7) {
-                _QCSPmodel.add(1,"AllState","Model with all states as defined by P. Nightingale. Without Pure Value and heuristic setup.");
-                _QCSPmodel.add(2,"AllState+","Model with all states as defined by P. Nightingale. With cut.");
-                _QCSPmodel.add(3,"AllState++","Model with all states as defined by P. Nightingale. With cut and additional constraints.");
-                add(_QCSPmodel);
-                add(_heuristic);
-                add(_file);
-                add(_row);
-                add(_col);
-            }
-        /// Return model name
-        int QCSPmodel(void) const {
-            return _QCSPmodel.value();
+protected:
+    /// Model name
+    Gecode::Driver::StringOption _QCSPmodel;
+    /// Heuristic in branching
+    Gecode::Driver::BoolOption _heuristic;
+    /// File name of recorded moves
+    Gecode::Driver::StringValueOption _file;
+    /// Optional number of rows
+    Gecode::Driver::UnsignedIntOption _row;
+    /// Optional number of cols
+    Gecode::Driver::UnsignedIntOption _col;
+public:
+    /// Asynchronous algorithm which will cooperate with QuaCode
+    AsyncAlgo *aAlgo;
+    /// Initialize options for example with name \a s
+    ConnectFourOptions(const char* s)
+        : Options(s), _QCSPmodel("-QCSPmodel","Name of the model used for modeling problem",3),
+        _heuristic("-heuristic","Use heuristic when branching (only for model + and ++)",true),
+        _file("-file","File name of recorded moves"),
+        _row("-row","Number of rows (minimum 4)",6),
+        _col("-col","Number of cols (minimum 4)",7) {
+            _QCSPmodel.add(1,"AllState","Model with all states as defined by P. Nightingale. Without Pure Value and heuristic setup.");
+            _QCSPmodel.add(2,"AllState+","Model with all states as defined by P. Nightingale. With cut.");
+            _QCSPmodel.add(3,"AllState++","Model with all states as defined by P. Nightingale. With cut and additional constraints.");
+            add(_QCSPmodel);
+            add(_heuristic);
+            add(_file);
+            add(_row);
+            add(_col);
         }
-        /// Return if heuristic must be used
-        bool heuristic(void) const {
-            return _heuristic.value();
-        }
-        /// Return file name
-        const char *file(void) const {
-            return _file.value();
-        }
-        /// Return number of rows
-        int row(void) const {
-            return _row.value();
-        }
-        /// Return number of cols
-        int col(void) const {
-            return _col.value();
-        }
+    /// Return model name
+    int QCSPmodel(void) const {
+        return _QCSPmodel.value();
+    }
+    /// Return if heuristic must be used
+    bool heuristic(void) const {
+        return _heuristic.value();
+    }
+    /// Return file name
+    const char *file(void) const {
+        return _file.value();
+    }
+    /// Return number of rows
+    int row(void) const {
+        return _row.value();
+    }
+    /// Return number of cols
+    int col(void) const {
+        return _col.value();
+    }
 };
 
 /// Succeed the space
@@ -177,7 +177,7 @@ class ConnectFourAllState : public Script, public QSpaceInfo {
 
     const ConnectFourOptions& opt;
 
-    public:
+public:
     ConnectFourAllState(const ConnectFourOptions& _opt) : Script(_opt), QSpaceInfo(*_opt.aAlgo), opt(_opt)
     {
         // DEBUT DESCRIPTION PB
