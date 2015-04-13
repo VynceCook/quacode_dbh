@@ -171,7 +171,7 @@ public:
             o_im1 = oi;
         }
 
-        // END PB DESCRIPTION
+        // END OF PB DESCRIPTION
         aAlgo.closeModeling();
     }
 

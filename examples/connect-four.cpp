@@ -439,7 +439,7 @@ public:
                     rel(*this, board[(nbDecisionVar-1)*row*col+i*row+j] != Nil, ICL_DOM);
         }
 
-        // END PB DESCRIPTION
+        // END OF PB DESCRIPTION
         aAlgo.closeModeling();
     }
 

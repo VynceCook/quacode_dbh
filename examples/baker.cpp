@@ -136,7 +136,7 @@ public:
         //branch(*this, X, INT_VAR_NONE(), INT_VALUES_MIN());
         branch(*this, aAlgo, X, INT_VAR_NONE());
 
-        // END PB DESCRIPTION
+        // END OF PB DESCRIPTION
         aAlgo.closeModeling();
     }
 

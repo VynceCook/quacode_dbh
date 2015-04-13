@@ -313,7 +313,7 @@ public:
         for (unsigned int i=0; i<qx.size(); i++)
             branch(*this, qx[i], INT_VAR_NONE(), INT_VAL_MIN());
 
-        // END PB DESCRIPTION
+        // END OF PB DESCRIPTION
         aAlgo.closeModeling();
     }
 };
