@@ -64,33 +64,33 @@ namespace Gecode { namespace Driver {
  * \brief Options taking one additional parameter
  */
 class BakerOptions : public Options {
-    public:
-        /// Asynchronous algorithm which will cooperate with QuaCode
-        AsyncAlgo *aAlgo;
+public:
+    /// Asynchronous algorithm which will cooperate with QuaCode
+    AsyncAlgo *aAlgo;
 
-        int n; /// Parameter to be given on the command line
-        /// Initialize options for example with name \a s
-        BakerOptions(const char* s, int n0)
-            : Options(s), n(n0) {}
-        /// Parse options from arguments \a argv (number is \a argc)
-        void parse(int& argc, char* argv[]) {
-            Options::parse(argc,argv);
-            if (argc < 2)
-                return;
-            n = atoi(argv[1]);
-        }
-        /// Print help message
-        virtual void help(void) {
-            Options::help();
-            std::cerr << "\t(unsigned int) default: " << n << std::endl
-                << "\t\tValue used to restrict the domain of w1 in order to make the problem harder" << std::endl;
-        }
+    int n; /// Parameter to be given on the command line
+    /// Initialize options for example with name \a s
+    BakerOptions(const char* s, int n0)
+        : Options(s), n(n0) {}
+    /// Parse options from arguments \a argv (number is \a argc)
+    void parse(int& argc, char* argv[]) {
+        Options::parse(argc,argv);
+        if (argc < 2)
+            return;
+        n = atoi(argv[1]);
+    }
+    /// Print help message
+    virtual void help(void) {
+        Options::help();
+        std::cerr << "\t(unsigned int) default: " << n << std::endl
+            << "\t\tValue used to restrict the domain of w1 in order to make the problem harder" << std::endl;
+    }
 };
 
 class QCSPBaker : public Script, public QSpaceInfo {
     IntVarArray X;
 
-    public:
+public:
     QCSPBaker(const BakerOptions& opt) : Script(opt), QSpaceInfo(*opt.aAlgo)
     {
         // DEBUT DESCRIPTION PB

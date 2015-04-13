@@ -149,6 +149,8 @@ SET(CALLBACK_EXAMPLES_SRCS
     examples/rndQCSP.cpp
     examples/connect-four.cpp
     examples/qdimacs.cpp
+    examples/matrix-game.cpp
+    examples/speeddating.cpp
 )
 
 SOURCE_GROUP("Hpp Files" REGULAR_EXPRESSION ".hpp")
