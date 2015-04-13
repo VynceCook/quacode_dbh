@@ -4,7 +4,7 @@
  *     Vincent Barichard <Vincent.Barichard@univ-angers.fr>
  *
  *  Copyright:
- *     Vincent Barichard, 2013
+ *     Vincent Barichard, 2015
  *
  *  Last modified:
  *     $Date$ by $Author$
@@ -41,7 +41,7 @@
 #include <gecode/minimodel.hh>
 #include <gecode/driver.hh>
 
-#include <sibus/receivers/receiver-out.hh>
+#include <algorithms/logger.hh>
 
 using namespace Gecode;
 
@@ -58,32 +58,14 @@ namespace Gecode { namespace Driver {
 }}
 #endif
 
-  // Struct utile pour simplifier la syntaxe de l'initialisation des vectors par des listes
-  template <typename T>
-  struct vlist_of : public std::vector<T> {
-    vlist_of() { }
-    vlist_of(TComparisonType cmp) {
-      this->push_back(TArgCmp(cmp));
-    }
-    vlist_of(const T& t) {
-      (*this)(t);
-    }
-    vlist_of& operator()(const T& t) {
-      this->push_back(t);
-      return *this;
-    }
-    vlist_of& operator()(int t1, int t2) {
-      this->push_back(TArg(t1,t2));
-      return *this;
-    }
-  };
-
 
 /**
  * \brief Options taking one additional parameter
  */
 class RndQCSPOptions : public Options {
     public:
+        /// Asynchronous algorithm which will cooperate with QuaCode
+        AsyncAlgo *aAlgo;
         /// Print strategy or not
         Gecode::Driver::BoolOption _printStrategy;
         /// File name of bench
@@ -111,7 +93,7 @@ class RndQCSP : public Script, public QSpaceInfo {
     IntVarArray X;
 
     public:
-    RndQCSP(const RndQCSPOptions& opt) : Script(opt), QSpaceInfo()
+    RndQCSP(const RndQCSPOptions& opt) : Script(opt), QSpaceInfo(*opt.aAlgo)
     {
         std::cout << "Loading problem" << std::endl;
         using namespace Int;
@@ -155,9 +137,9 @@ class RndQCSP : public Script, public QSpaceInfo {
                             if (quant == 'F') setForAll(*this,v);
                             std::stringstream ss_x; ss_x << "x" << val;
                             if (quant == 'F')
-                                SIBus::instance().sendVar(TVarBinder(FORALL,ss_x.str(),TYPE_INT,TVal(domMin,domMax)));
+                                aAlgo.newVar(FORALL,ss_x.str(),TYPE_INT,domMin,domMax);
                             else
-                                SIBus::instance().sendVar(TVarBinder(EXISTS,ss_x.str(),TYPE_INT,TVal(domMin,domMax)));
+                                aAlgo.newVar(EXISTS,ss_x.str(),TYPE_INT,domMin,domMax);
                             vaX << v;
                             nbVars--;
                             if (nbVars == 0) {
@@ -192,7 +174,8 @@ class RndQCSP : public Script, public QSpaceInfo {
         //branch(*this, X, INT_VAR_NONE(), INT_VALUES_MIN());
         branch(*this, X, INT_VAR_NONE(), INT_VAL_MIN());
 
-        SIBus::instance().sendCloseModeling();
+        // END PB DESCRIPTION
+        aAlgo.closeModeling();
     }
 
     RndQCSP(bool share, RndQCSP& p) : Script(share,p), QSpaceInfo(*this,share,p)
@@ -203,17 +186,11 @@ class RndQCSP : public Script, public QSpaceInfo {
     virtual Space* copy(bool share) { return new RndQCSP(share,*this); }
 
     void eventNewInstance(void) const {
-        TInstance instance;
+        TScenario scenario;
         for (int i=0; i<X.size(); i++)
-        {
-            if (!X[i].varimp()->assigned())
-                instance.push_back(TVal());
-            else
-                instance.push_back(TVal(X[i].varimp()->val()));
-        }
-        SIBus::instance().sendInstance(instance);
+            scenario.push_back({ .min = X[i].varimp()->min(), .max = X[i].varimp()->max() });
+        aAlgo.newPromisingScenario(scenario);
     }
-
 
     void print(std::ostream& os) const {
         strategyPrint(os);
@@ -222,15 +199,12 @@ class RndQCSP : public Script, public QSpaceInfo {
 
 int main(int argc, char* argv[])
 {
-    ProcessSTDOUT pStdout;
-
-    SIBus::create();
-    SIBus::instance().addReceiver(pStdout);
-
     RndQCSPOptions opt("RndQCSP Problem");
     opt.parse(argc,argv);
+
+    Logger aAlgo(false);
+    opt.aAlgo = &aAlgo;
     Script::run<RndQCSP,QDFS,RndQCSPOptions>(opt);
 
-    SIBus::kill();
     return 0;
 }

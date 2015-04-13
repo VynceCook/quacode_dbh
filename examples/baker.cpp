@@ -136,7 +136,7 @@ class QCSPBaker : public Script, public QSpaceInfo {
         //branch(*this, X, INT_VAR_NONE(), INT_VALUES_MIN());
         branch(*this, aAlgo, X, INT_VAR_NONE());
 
-        // FIN DESCRIPTION PB
+        // END PB DESCRIPTION
         aAlgo.closeModeling();
     }
 
