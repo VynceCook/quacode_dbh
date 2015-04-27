@@ -34,7 +34,7 @@ forceinline bool AsyncAlgo::mainThreadFinished() const {
 }
 
 forceinline void AsyncAlgo::closeModeling() {
-    Gecode::Support::Thread::run(this);
+    Gecode::Support::Thread::run(this); // Start the run member function of AsyncAlgo
 }
 
 forceinline void AsyncAlgo::newVar(Gecode::TQuantifier q, const std::string& name, TVarType t, int min, int max) {

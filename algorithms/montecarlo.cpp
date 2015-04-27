@@ -36,7 +36,14 @@ MonteCarlo::MonteCarlo(bool killThread) : AsyncAlgo(killThread) {
     mNbVars = 0;
     mNbBinderVars = 0;
 }
-MonteCarlo::~MonteCarlo() { }
+MonteCarlo::~MonteCarlo() {
+    // Here is the last chance to access class member variables
+    for (auto& varConflicts : mConflicts) {
+        for (auto& v : varConflicts)
+            OSTREAM << v << " ";
+        OSTREAM << std::endl;
+    }
+}
 
 void MonteCarlo::newVarCreated(int idx, Gecode::TQuantifier q, const std::string& name, TVarType type, int min, int max) {
     if (mNbBinderVars != mNbVars) {
@@ -138,9 +145,12 @@ unsigned long int MonteCarlo::evalConstraints(const std::vector<int>& instance) 
         v += abs(constraint[0].coeff * instance[constraint[0].iVar] \
             * instance[constraint[1].iVar] - instance[constraint[2].iVar]);
         if (v != 0) {
-            mConflicts[constraint[0].iVar][instance[constraint[0].iVar]-mVars[constraint[0].iVar].dom.min]++;
-            mConflicts[constraint[1].iVar][instance[constraint[1].iVar]-mVars[constraint[1].iVar].dom.min]++;
-            mConflicts[constraint[2].iVar][instance[constraint[2].iVar]-mVars[constraint[2].iVar].dom.min]++;
+            if (constraint[0].iVar < mNbBinderVars)
+                mConflicts[constraint[0].iVar][instance[constraint[0].iVar]-mVars[constraint[0].iVar].dom.min]++;
+            if (constraint[1].iVar < mNbBinderVars)
+                mConflicts[constraint[1].iVar][instance[constraint[1].iVar]-mVars[constraint[1].iVar].dom.min]++;
+            if (constraint[2].iVar < mNbBinderVars)
+                mConflicts[constraint[2].iVar][instance[constraint[2].iVar]-mVars[constraint[2].iVar].dom.min]++;
             error += v;
         }
     }
@@ -152,7 +162,8 @@ unsigned long int MonteCarlo::evalConstraints(const std::vector<int>& instance) 
             v += m.coeff * instance[m.iVar];
         if (v != 0) {
             for (const auto& m : constraint)
-                mConflicts[m.iVar][instance[m.iVar]-mVars[m.iVar].dom.min]++;
+                if (m.iVar < mNbBinderVars)
+                    mConflicts[m.iVar][instance[m.iVar]-mVars[m.iVar].dom.min]++;
             error += abs(v);
         }
     }
@@ -180,8 +191,10 @@ void MonteCarlo::parallelTask() {
         generateInstance(instance);
         error = evalConstraints(instance);
         OSTREAM << "Error: " << error << std::endl;
-        Gecode::Support::Thread::sleep(300);
+        Gecode::Support::Thread::sleep(100);
     }
+    // If mainThread has finished, member variables are not usable anymore
+    // if you need it, save it in the destructor
     OSTREAM << "MonteCarlo stop" << std::endl;
     OSTREAM << "NbIterations: " << nbIterations << std::endl;
 }
