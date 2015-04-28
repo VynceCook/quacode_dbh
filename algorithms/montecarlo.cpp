@@ -149,7 +149,8 @@ unsigned long int MonteCarlo::evalConstraints(const std::vector<int>& instance) 
                 mConflicts[constraint[1].iVar][instance[constraint[1].iVar]-mVars[constraint[1].iVar].dom.min]++;
             if (constraint[2].iVar < mNbBinderVars)
                 mConflicts[constraint[2].iVar][instance[constraint[2].iVar]-mVars[constraint[2].iVar].dom.min]++;
-            error += v;
+            error += 3;
+            //error += v;
         }
     }
 
@@ -160,22 +161,16 @@ unsigned long int MonteCarlo::evalConstraints(const std::vector<int>& instance) 
             v += m.coeff * instance[m.iVar];
         if (v != 0) {
             for (const auto& m : constraint)
-                if (m.iVar < mNbBinderVars)
+                if (m.iVar < mNbBinderVars) {
                     mConflicts[m.iVar][instance[m.iVar]-mVars[m.iVar].dom.min]++;
-            error += abs(v);
+                    error++;
+                }
+            //error += abs(v);
         }
     }
 
     return error;
 }
-
-//void MonteCarlo::generateInstance(std::vector<int>& instance) {
-//    int i = 0;
-//    for (auto& v : instance) {
-//        v = mVars[i].dom.min + rand() % (mVars[i].dom.max - mVars[i].dom.min + 1);
-//        i++;
-//    }
-//}
 
 int MonteCarlo::getIdxMinConflicts() {
     assert(mConflicts.size() > 0);
@@ -222,7 +217,8 @@ void MonteCarlo::parallelTask() {
     for ( ; ; ) {
         if (mbQuacodeThreadFinished) break;
         // Select next variable
-        k = getIdxMinConflicts();
+        //k = getIdxMinConflicts();
+        k = rand() % mNbBinderVars;
         // Randomly choose a new value
         vSaved = instance[k];
         instance[k] = mVars[k].dom.min + rand() % (mVars[k].dom.max - mVars[k].dom.min + 1);
