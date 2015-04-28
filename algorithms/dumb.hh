@@ -43,10 +43,8 @@ class DumbAlgorithm : public AsyncAlgo {
     /// Vector of domains of variables (the binder variables)
     std::vector< Interval > mDomains;
 public:
-    /// Main constructor, \a killThread is set to false
-    /// if we want that the main thread (Quacode) waits for
-    /// the end of the asynchronous working thread
-    DumbAlgorithm(bool killThread = true);
+    /// Main constructor
+    DumbAlgorithm();
 
     /// Function called when a new variable \a var named \a name
     /// is created at position \a idx in the binder.

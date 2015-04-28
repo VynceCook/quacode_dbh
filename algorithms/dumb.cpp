@@ -32,7 +32,7 @@
 #include <algorithms/dumb.hh>
 #define OSTREAM std::cerr
 
-DumbAlgorithm::DumbAlgorithm(bool killThread) : AsyncAlgo(killThread) {
+DumbAlgorithm::DumbAlgorithm() : AsyncAlgo() {
     mNbVars = 0;
 }
 DumbAlgorithm::~DumbAlgorithm() { }
@@ -57,7 +57,6 @@ void DumbAlgorithm::parallelTask() {
     OSTREAM << "THREAD start" << std::endl;
     srand(time(NULL));
     for ( ; ; ) {
-        if (mainThreadFinished()) break;
         int iVar = rand() % mNbVars;
         int i0 = rand() % (mDomains[iVar].max - mDomains[iVar].min + 1);
         int i1 = rand() % (mDomains[iVar].max - mDomains[iVar].min + 1);

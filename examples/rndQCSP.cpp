@@ -201,7 +201,7 @@ int main(int argc, char* argv[])
     RndQCSPOptions opt("RndQCSP Problem");
     opt.parse(argc,argv);
 
-    Logger aAlgo(false);
+    Logger aAlgo;
     opt.aAlgo = &aAlgo;
     Script::run<RndQCSP,QDFS,RndQCSPOptions>(opt);
 

@@ -35,6 +35,11 @@
 #include <quacode/asyncalgo.hh>
 
 class MonteCarlo : public AsyncAlgo {
+    /// Flag to know if the main thread finished its work
+    bool mbQuacodeThreadFinished;
+    /// Mutex to block the destructor
+    Gecode::Support::Mutex mDestructor;
+
     /// Copy constructor set private to disable it.
     MonteCarlo(const MonteCarlo&);
 
@@ -74,15 +79,12 @@ class MonteCarlo : public AsyncAlgo {
     /// with the given instance \a instance
     unsigned long int evalConstraints(const std::vector<int>& instance);
 
-    /// Fill the given instance \a instance with
-    /// random numbers
-    void generateInstance(std::vector<int>& instance);
+    /// Return the idx of variable involved in fewer conflicts
+    int getIdxMinConflicts();
 
 public:
-    /// Main constructor, \a killThread is set to false
-    /// if we want that the main thread (Quacode) waits for
-    /// the end of the asynchronous working thread
-    MonteCarlo(bool killThread = true);
+    /// Main constructor
+    MonteCarlo();
 
     /// Function called when a new variable \a var named \a name
     /// is created at position \a idx in the binder.

@@ -164,9 +164,9 @@ int main(int argc, char* argv[])
     BakerOptions opt("Baker Problem",0);
     opt.parse(argc,argv);
 
-    //Logger aAlgo(false);
+    //Logger aAlgo;
     //DumbAlgorithm aAlgo;
-    MonteCarlo aAlgo(false);
+    MonteCarlo aAlgo;
     opt.aAlgo = &aAlgo;
     Script::run<QCSPBaker,QDFS,BakerOptions>(opt);
 

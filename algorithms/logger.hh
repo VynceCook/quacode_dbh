@@ -33,6 +33,11 @@
 #include <quacode/asyncalgo.hh>
 
 class Logger : public AsyncAlgo {
+    /// Flag to know if the main thread finished its work
+    bool mbQuacodeThreadFinished;
+    /// Mutex to block the destructor
+    Gecode::Support::Mutex mDestructor;
+
     /// Vector of name of variables (the binder variables)
     std::vector< std::string > mVarNames;
 
@@ -40,10 +45,8 @@ class Logger : public AsyncAlgo {
     Logger(const Logger&);
 
 public:
-    /// Main constructor, \a killThread is set to false
-    /// if we want that the main thread (Quacode) waits for
-    /// the end of the asynchronous working thread
-    Logger(bool killThread = true);
+    /// Main constructor
+    Logger();
 
     /// Function called when a new variable \a var named \a name
     /// is created at position \a idx in the binder.

@@ -32,17 +32,15 @@
 #include <algorithms/montecarlo.hh>
 #define OSTREAM std::cerr
 
-MonteCarlo::MonteCarlo(bool killThread) : AsyncAlgo(killThread) {
+MonteCarlo::MonteCarlo() : AsyncAlgo(), mbQuacodeThreadFinished(false) {
     mNbVars = 0;
     mNbBinderVars = 0;
 }
 MonteCarlo::~MonteCarlo() {
-    // Here is the last chance to access class member variables
-    for (auto& varConflicts : mConflicts) {
-        for (auto& v : varConflicts)
-            OSTREAM << v << " ";
-        OSTREAM << std::endl;
-    }
+    mbQuacodeThreadFinished = true;
+    // We block the destructor until the background thread finished
+    mDestructor.acquire();
+    mDestructor.release();
 }
 
 void MonteCarlo::newVarCreated(int idx, Gecode::TQuantifier q, const std::string& name, TVarType type, int min, int max) {
@@ -171,30 +169,86 @@ unsigned long int MonteCarlo::evalConstraints(const std::vector<int>& instance) 
     return error;
 }
 
-void MonteCarlo::generateInstance(std::vector<int>& instance) {
-    int i = 0;
-    for (auto& v : instance) {
-        v = mVars[i].dom.min + rand() % (mVars[i].dom.max - mVars[i].dom.min + 1);
-        i++;
+//void MonteCarlo::generateInstance(std::vector<int>& instance) {
+//    int i = 0;
+//    for (auto& v : instance) {
+//        v = mVars[i].dom.min + rand() % (mVars[i].dom.max - mVars[i].dom.min + 1);
+//        i++;
+//    }
+//}
+
+int MonteCarlo::getIdxMinConflicts() {
+    assert(mConflicts.size() > 0);
+
+    int error = 0;
+    int idx = 0;
+    int minError = 0;
+    for (auto& v : mConflicts[0])
+        minError += v;
+
+    for (unsigned int i=0; i < mConflicts.size(); i++) {
+        error = 0;
+        for (auto& v : mConflicts[i])
+            error += v;
+        if (error < minError) {
+            minError = error;
+            idx = i;
+        }
     }
+    return idx;
 }
 
 void MonteCarlo::parallelTask() {
-    OSTREAM << "MonteCarlo start" << std::endl;
-    unsigned long int nbIterations = 0;
-    srand(time(NULL));
-    std::vector<int> instance(mNbVars);
-    unsigned long int error;
-    for ( ; ; ) {
-        if (mainThreadFinished()) break;
-        nbIterations++;
-        generateInstance(instance);
-        error = evalConstraints(instance);
-        OSTREAM << "Error: " << error << std::endl;
-        Gecode::Support::Thread::sleep(100);
-    }
     // If mainThread has finished, member variables are not usable anymore
-    // if you need it, save it in the destructor
+    // so we block the destructor until we finish here
+    mDestructor.acquire();
+
+    OSTREAM << "MonteCarlo start" << std::endl;
+    srand(time(NULL));
+    unsigned long int nbIterations = 0;
+    std::vector<int> instance(mNbVars);
+    unsigned long int error, nError;
+    unsigned long int countFreq = 0, freq = 1000;
+    int k, vSaved;
+
+    countFreq = 0;
+    // Generate first random instance
+    k = 0;
+    for (auto& v : instance) {
+        v = mVars[k].dom.min + rand() % (mVars[k].dom.max - mVars[k].dom.min + 1);
+        k++;
+    }
+    error = evalConstraints(instance);
+    for ( ; ; ) {
+        if (mbQuacodeThreadFinished) break;
+        // Select next variable
+        k = getIdxMinConflicts();
+        // Randomly choose a new value
+        vSaved = instance[k];
+        instance[k] = mVars[k].dom.min + rand() % (mVars[k].dom.max - mVars[k].dom.min + 1);
+        nbIterations++;
+        countFreq++;
+        nError = evalConstraints(instance);
+        if (nError > error) {
+            error = nError;
+            OSTREAM << "New error: " << nError << std::endl;
+        } else {
+            error = nError;
+            instance[k] = vSaved;
+        }
+        if (countFreq == freq) {
+            OSTREAM << "Frequency threshold " << freq << " reached" << std::endl;
+            countFreq = 0;
+        }
+    }
+
+    for (auto& varConflicts : mConflicts) {
+        for (auto& v : varConflicts)
+            OSTREAM << v << " ";
+        OSTREAM << std::endl;
+    }
     OSTREAM << "MonteCarlo stop" << std::endl;
     OSTREAM << "NbIterations: " << nbIterations << std::endl;
+    // Release the destructor as we have finish everything
+    mDestructor.release();
 }

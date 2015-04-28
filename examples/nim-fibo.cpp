@@ -200,7 +200,7 @@ int main(int argc, char* argv[])
     NimFiboOptions opt("QCSP Nim-Fibo",3);
     opt.parse(argc,argv);
 
-    Logger aAlgo(false);
+    Logger aAlgo;
     opt.aAlgo = &aAlgo;
     Script::run<QCSPNimFibo,QDFS,NimFiboOptions>(opt);
 

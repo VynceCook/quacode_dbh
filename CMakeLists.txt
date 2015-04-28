@@ -147,6 +147,7 @@ SET(CALLBACK_EXAMPLES_SRCS
     examples/baker.cpp
     examples/nim-fibo.cpp
     examples/rndQCSP.cpp
+    examples/qbf.cpp
     examples/connect-four.cpp
     examples/qdimacs.cpp
     examples/matrix-game.cpp

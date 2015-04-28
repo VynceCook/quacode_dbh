@@ -390,7 +390,7 @@ int main(int argc, char* argv[])
     SpeedDatingOptions opt("SpeedDating Problem",2,2,1);
     opt.parse(argc,argv);
 
-    Logger aAlgo(false);
+    Logger aAlgo;
     opt.aAlgo = &aAlgo;
     Script::run<QCSPSpeedDating,QDFS,SpeedDatingOptions>(opt);
 

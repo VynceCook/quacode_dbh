@@ -212,7 +212,7 @@ int main(int argc, char* argv[])
     MatrixGameOptions opt("QCSP Matrix-Game",5,false);
     opt.parse(argc,argv);
 
-    Logger aAlgo(false);
+    Logger aAlgo;
     opt.aAlgo = &aAlgo;
     Script::run<QCSPMatrixGame,QDFS,MatrixGameOptions>(opt);
 

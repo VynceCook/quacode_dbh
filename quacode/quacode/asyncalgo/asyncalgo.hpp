@@ -29,10 +29,6 @@
 
 #include <cassert>
 
-forceinline bool AsyncAlgo::mainThreadFinished() const {
-    return mbMainThreadFinished;
-}
-
 forceinline void AsyncAlgo::closeModeling() {
     Gecode::Support::Thread::run(this); // Start the run member function of AsyncAlgo
 }

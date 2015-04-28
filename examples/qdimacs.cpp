@@ -333,7 +333,7 @@ int main(int argc, char* argv[]) {
         std::exit(EXIT_FAILURE);
     }
 
-    Logger aAlgo(false);
+    Logger aAlgo;
     opt.aAlgo = &aAlgo;
     // Run SAT solver
     Script::run<QDimacs,DFS,QDimacsOptions>(opt);

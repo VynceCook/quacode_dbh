@@ -30,9 +30,13 @@
 #include <algorithms/logger.hh>
 #define OSTREAM std::cerr
 
-Logger::Logger(bool killThread) : AsyncAlgo(killThread) { }
+Logger::Logger() : AsyncAlgo(), mbQuacodeThreadFinished(false) { }
 
 Logger::~Logger() {
+    mbQuacodeThreadFinished = true;
+    // We block the destructor until the background thread finished
+    mDestructor.acquire();
+    mDestructor.release();
     OSTREAM << "OBJECT DESTROYED" << std::endl;
 }
 
@@ -113,11 +117,17 @@ void Logger::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, c
 }
 
 void Logger::parallelTask() {
+    // If mainThread has finished, member variables are not usable anymore
+    // so we block the destructor until we finish here
+    mDestructor.acquire();
+
     OSTREAM << "THREAD start" << std::endl;
     for ( ; ; ) {
-        if (mainThreadFinished()) break;
+        if (mbQuacodeThreadFinished) break;
         OSTREAM << "THREAD ..." << std::endl;
         Gecode::Support::Thread::sleep(300);
     }
     OSTREAM << "THREAD stop" << std::endl;
+    // Release the destructor as we have finish everything
+    mDestructor.release();
 }

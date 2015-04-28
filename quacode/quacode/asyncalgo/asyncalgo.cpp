@@ -30,26 +30,15 @@
 #include <iostream>
 #include <quacode/asyncalgo.hh>
 
-AsyncAlgo::AsyncAlgo(bool killThread)
-    : mbMainThreadFinished(false), mbKillThread(killThread) {
-}
+AsyncAlgo::AsyncAlgo() { }
 
 AsyncAlgo::~AsyncAlgo() {
-    mbMainThreadFinished = true;
-    if (!mbKillThread) {
-        mExit.acquire();
-        mExit.release();
-    }
     for (const auto& m : mDomainsMutex)
         delete m;
 }
 
 void AsyncAlgo::run() {
-    if (!mbKillThread)
-        mExit.acquire();
     parallelTask();
-    if (!mbKillThread)
-        mExit.release();
     Gecode::Support::Event dummy;
     dummy.wait();
 }

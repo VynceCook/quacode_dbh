@@ -641,7 +641,7 @@ int main(int argc, char* argv[])
     ConnectFourOptions opt("QCSP Connect-Four-Game");
     opt.parse(argc,argv);
 
-    Logger aAlgo(false);
+    Logger aAlgo;
     opt.aAlgo = &aAlgo;
     Script::run<ConnectFourAllState,QDFS,ConnectFourOptions>(opt);
 

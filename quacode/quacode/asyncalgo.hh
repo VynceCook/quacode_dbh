@@ -85,14 +85,6 @@ class AsyncAlgo : public Gecode::Support::Runnable {
     template<int n, bool min> friend class Gecode::Int::Branch::QViewValuesOrderBrancher;
     friend class Gecode::Int::Branch::QPosValuesOrderChoice;
 
-    /// Mutex for synchronization on exit
-    Gecode::Support::Mutex mExit;
-    /// Flag to know if the main thread finished its work
-    bool mbMainThreadFinished;
-    /// Flag to know if the main thread must kill the thread
-    /// or wait for its end
-    bool mbKillThread;
-
     /// Stores the ordered domain of each variable of the binder
     std::vector< std::vector<int> > mDomains;
     /// Mutex for access to mDomains
@@ -107,16 +99,11 @@ class AsyncAlgo : public Gecode::Support::Runnable {
     /// It copies only the elemnts that are in the IntView \a iv
     void copyDomainIf(int iVar, const Gecode::Int::IntView& iv, std::vector<int>& dest) const;
 public:
-    /// Main constructor, \a killThread is set to false
-    /// if we want that the main thread (Quacode) waits for
-    /// the end of the asynchronous working thread
-    QUACODE_EXPORT AsyncAlgo(bool killThread = true);
+    /// Main constructor
+    QUACODE_EXPORT AsyncAlgo();
 
     // Main destructor
     QUACODE_EXPORT virtual ~AsyncAlgo();
-
-    /// Returns true is the main thread (i.e. Quacode finished its work)
-    QUACODE_EXPORT bool mainThreadFinished() const;
 
     ///-----------------------------------------------------------------------
     /// ------- These functions are called until the 'closeModeling' function is called
