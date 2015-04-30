@@ -85,13 +85,15 @@ class AsyncAlgo : public Gecode::Support::Runnable {
     template<int n, bool min> friend class Gecode::Int::Branch::QViewValuesOrderBrancher;
     friend class Gecode::Int::Branch::QPosValuesOrderChoice;
 
+    /// Copy constructor set private to disable it.
+    AsyncAlgo(const AsyncAlgo&);
+
+protected:
     /// Stores the ordered domain of each variable of the binder
     std::vector< std::vector<int> > mDomains;
     /// Mutex for access to mDomains
     mutable std::vector< Gecode::Support::Mutex* > mDomainsMutex;
 
-    /// Copy constructor set private to disable it.
-    AsyncAlgo(const AsyncAlgo&);
     /// Wrapper function executed when the thread starts
     QUACODE_EXPORT virtual void run(void);
 

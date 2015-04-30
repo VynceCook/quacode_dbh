@@ -96,41 +96,45 @@ public:
         // DEBUT DESCRIPTION PB
         std::cout << "Loading problem" << std::endl;
         using namespace Int;
-        aAlgo.newVar(EXISTS,"w1",TYPE_INT,1,40);
-        aAlgo.newVar(EXISTS,"w2",TYPE_INT,1,40);
-        aAlgo.newVar(EXISTS,"w3",TYPE_INT,1,40);
-        aAlgo.newVar(EXISTS,"w4",TYPE_INT,1,40);
-        aAlgo.newVar(FORALL,"f",TYPE_INT,1,40);
+        aAlgo.newVar(EXISTS,"w1",TYPE_INT,1,opt.n);
+        aAlgo.newVar(EXISTS,"w2",TYPE_INT,1,opt.n);
+        aAlgo.newVar(EXISTS,"w3",TYPE_INT,1,opt.n);
+        aAlgo.newVar(EXISTS,"w4",TYPE_INT,1,opt.n);
+        aAlgo.newVar(EXISTS,"w5",TYPE_INT,1,opt.n);
+        aAlgo.newVar(FORALL,"f",TYPE_INT,1,opt.n);
         aAlgo.newVar(EXISTS,"c1",TYPE_INT,-1,1);
         aAlgo.newVar(EXISTS,"c2",TYPE_INT,-1,1);
         aAlgo.newVar(EXISTS,"c3",TYPE_INT,-1,1);
         aAlgo.newVar(EXISTS,"c4",TYPE_INT,-1,1);
-        aAlgo.newAuxVar("o1",TYPE_INT,-40,40);
-        aAlgo.newAuxVar("o2",TYPE_INT,-40,40);
-        aAlgo.newAuxVar("o3",TYPE_INT,-40,40);
-        aAlgo.newAuxVar("o4",TYPE_INT,-40,40);
+        aAlgo.newVar(EXISTS,"c5",TYPE_INT,-1,1);
+        aAlgo.newAuxVar("o1",TYPE_INT,-opt.n,opt.n);
+        aAlgo.newAuxVar("o2",TYPE_INT,-opt.n,opt.n);
+        aAlgo.newAuxVar("o3",TYPE_INT,-opt.n,opt.n);
+        aAlgo.newAuxVar("o4",TYPE_INT,-opt.n,opt.n);
+        aAlgo.newAuxVar("o5",TYPE_INT,-opt.n,opt.n);
 
-        IntVarArgs w(*this,4,1,40);
-        IntVar f(*this,1,40);
+        IntVarArgs w(*this,5,1,opt.n);
+        IntVar f(*this,1,opt.n);
         setForAll(*this, f);
-        IntVarArgs c(*this,4,-1,1);
+        IntVarArgs c(*this,5,-1,1);
         IntVarArgs vaX;
         vaX << w << f << c;
         X = IntVarArray(*this, vaX);
 
-        IntVar o1(*this,-40,40), o2(*this,-40,40), o3(*this,-40,40), o4(*this,-40,40);
-        rel(*this, w[0], IRT_GR, opt.n);
+        IntVar o1(*this,-opt.n,opt.n), o2(*this,-opt.n,opt.n), o3(*this,-opt.n,opt.n), o4(*this,-opt.n,opt.n), o5(*this,-opt.n,opt.n);
         rel(*this, w[0] * c[0] == o1);
         rel(*this, w[1] * c[1] == o2);
         rel(*this, w[2] * c[2] == o3);
         rel(*this, w[3] * c[3] == o4);
-        rel(*this, o1 + o2 + o3 + o4 == f);
+        rel(*this, w[4] * c[4] == o5);
+        rel(*this, o1 + o2 + o3 + o4 + o5 == f);
 
         aAlgo.postTimes(1,"w1","c1",CMP_EQ,"o1");
         aAlgo.postTimes(1,"w2","c2",CMP_EQ,"o2");
         aAlgo.postTimes(1,"w3","c3",CMP_EQ,"o3");
         aAlgo.postTimes(1,"w4","c4",CMP_EQ,"o4");
-        std::vector<Monom> expr { {1,"o1"}, {1,"o2"}, {1,"o3"}, {1,"o4"}};
+        aAlgo.postTimes(1,"w5","c5",CMP_EQ,"o5");
+        std::vector<Monom> expr { {1,"o1"}, {1,"o2"}, {1,"o3"}, {1,"o4"}, {1,"o5"}};
         aAlgo.postLinear(expr,CMP_EQ,"f");
 
         //branch(*this, X, INT_VAR_NONE(), INT_VALUES_MIN());
@@ -161,7 +165,7 @@ public:
 
 int main(int argc, char* argv[])
 {
-    BakerOptions opt("Baker Problem",0);
+    BakerOptions opt("Baker Problem",40);
     opt.parse(argc,argv);
 
     //Logger aAlgo;

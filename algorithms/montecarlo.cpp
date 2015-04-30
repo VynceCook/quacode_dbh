@@ -149,8 +149,7 @@ unsigned long int MonteCarlo::evalConstraints(const std::vector<int>& instance) 
                 mConflicts[constraint[1].iVar][instance[constraint[1].iVar]-mVars[constraint[1].iVar].dom.min]++;
             if (constraint[2].iVar < mNbBinderVars)
                 mConflicts[constraint[2].iVar][instance[constraint[2].iVar]-mVars[constraint[2].iVar].dom.min]++;
-            error += 3;
-            //error += v;
+            error += v;
         }
     }
 
@@ -161,36 +160,21 @@ unsigned long int MonteCarlo::evalConstraints(const std::vector<int>& instance) 
             v += m.coeff * instance[m.iVar];
         if (v != 0) {
             for (const auto& m : constraint)
-                if (m.iVar < mNbBinderVars) {
+                if (m.iVar < mNbBinderVars)
                     mConflicts[m.iVar][instance[m.iVar]-mVars[m.iVar].dom.min]++;
-                    error++;
-                }
-            //error += abs(v);
+            error += abs(v);
         }
     }
 
     return error;
 }
 
-int MonteCarlo::getIdxMinConflicts() {
-    assert(mConflicts.size() > 0);
-
-    int error = 0;
-    int idx = 0;
-    int minError = 0;
-    for (auto& v : mConflicts[0])
-        minError += v;
-
-    for (unsigned int i=0; i < mConflicts.size(); i++) {
-        error = 0;
-        for (auto& v : mConflicts[i])
-            error += v;
-        if (error < minError) {
-            minError = error;
-            idx = i;
-        }
-    }
-    return idx;
+bool MonteCarlo::metropolis(int delta, float& temp) {
+	double value = exp(delta / temp);
+	double randValue = rand() % 10;
+        // Descreases temperature
+        temp = temp * sTemperatureDecreaseRate;
+	return (delta < 0 || value > randValue);
 }
 
 void MonteCarlo::parallelTask() {
@@ -204,6 +188,7 @@ void MonteCarlo::parallelTask() {
     std::vector<int> instance(mNbVars);
     unsigned long int error, nError;
     unsigned long int countFreq = 0, freq = 1000;
+    float temp = 4.5;
     int k, vSaved;
 
     countFreq = 0;
@@ -216,33 +201,60 @@ void MonteCarlo::parallelTask() {
     error = evalConstraints(instance);
     for ( ; ; ) {
         if (mbQuacodeThreadFinished) break;
-        // Select next variable
-        //k = getIdxMinConflicts();
-        k = rand() % mNbBinderVars;
+        // Select next variable randomly
+        k = rand() % mNbVars;
         // Randomly choose a new value
         vSaved = instance[k];
-        instance[k] = mVars[k].dom.min + rand() % (mVars[k].dom.max - mVars[k].dom.min + 1);
+        if (k < mNbBinderVars) // If in binder, we get value from the updated mDomains data structure
+            instance[k] = mDomains[k][rand() % mDomains[k].size()];
+        else
+            instance[k] = mVars[k].dom.min + rand() % (mVars[k].dom.max - mVars[k].dom.min + 1);
         nbIterations++;
         countFreq++;
         nError = evalConstraints(instance);
         if (nError > error) {
             error = nError;
+#ifdef LOG_AUDIT
             OSTREAM << "New error: " << nError << std::endl;
+#endif
         } else {
-            error = nError;
-            instance[k] = vSaved;
+            if (metropolis(error-nError,temp)) {
+                error = nError;
+#ifdef LOG_AUDIT
+                OSTREAM << "New error (metropolis ok): " << nError << std::endl;
+#endif
+            } else {
+                instance[k] = vSaved;
+            }
         }
         if (countFreq == freq) {
+#ifdef LOG_AUDIT
             OSTREAM << "Frequency threshold " << freq << " reached" << std::endl;
+#endif
+            int aux;
+            int iVar = 0;
+            for (auto& varConflicts : mConflicts) {
+                for (unsigned int i=0; i < varConflicts.size(); i++)
+                    for (unsigned int j=varConflicts.size(); --j; )
+                        if (varConflicts[i] > varConflicts[j]) {
+                            aux = varConflicts[i];
+                            varConflicts[i] = varConflicts[j];
+                            varConflicts[j] = aux;
+                            swap(iVar,i,j);
+                        }
+                iVar++;
+            }
             countFreq = 0;
         }
     }
 
+#ifdef LOG_AUDIT
     for (auto& varConflicts : mConflicts) {
         for (auto& v : varConflicts)
             OSTREAM << v << " ";
         OSTREAM << std::endl;
     }
+#endif
     OSTREAM << "MonteCarlo stop" << std::endl;
     OSTREAM << "NbIterations: " << nbIterations << std::endl;
     // Release the destructor as we have finish everything

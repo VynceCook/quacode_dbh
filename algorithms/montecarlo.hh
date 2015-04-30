@@ -35,6 +35,9 @@
 #include <quacode/asyncalgo.hh>
 
 class MonteCarlo : public AsyncAlgo {
+    /// Constants
+    constexpr static float sTemperatureDecreaseRate = 0.98;
+
     /// Flag to know if the main thread finished its work
     bool mbQuacodeThreadFinished;
     /// Mutex to block the destructor
@@ -75,12 +78,12 @@ class MonteCarlo : public AsyncAlgo {
     /// is undefined
     int getIdxVar(const std::string& name) const;
 
-    /// Eval the sum of all constraints of the problem
-    /// with the given instance \a instance
+    /// Eval all constraints of the problem and update the number of conflict variables
+    /// with the given instance \a instance. It returns the total error of the constraints.
     unsigned long int evalConstraints(const std::vector<int>& instance);
 
-    /// Return the idx of variable involved in fewer conflicts
-    int getIdxMinConflicts();
+    /// Returns true if Metropolis rule is satisfied (it updates the temp variable)
+    bool metropolis(int delta, float& temp);
 
 public:
     /// Main constructor
