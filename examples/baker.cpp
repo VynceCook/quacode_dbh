@@ -68,16 +68,26 @@ public:
     /// Asynchronous algorithm which will cooperate with QuaCode
     AsyncAlgo *aAlgo;
 
+    /// Print strategy or not
+    Gecode::Driver::BoolOption _printStrategy;
     int n; /// Parameter to be given on the command line
     /// Initialize options for example with name \a s
     BakerOptions(const char* s, int n0)
-        : Options(s), n(n0) {}
+        : Options(s),
+        _printStrategy("-printStrategy","Print strategy",false),
+        n(n0) {
+            add(_printStrategy);
+        }
     /// Parse options from arguments \a argv (number is \a argc)
     void parse(int& argc, char* argv[]) {
         Options::parse(argc,argv);
         if (argc < 2)
             return;
         n = atoi(argv[1]);
+    }
+    /// Return true if the strategy must be printed
+    bool printStrategy(void) const {
+        return _printStrategy.value();
     }
     /// Print help message
     virtual void help(void) {
@@ -95,6 +105,8 @@ public:
     {
         // DEBUT DESCRIPTION PB
         std::cout << "Loading problem" << std::endl;
+        if (!opt.printStrategy()) strategyMethod(0); // disable build and print strategy
+
         using namespace Int;
         aAlgo.newVar(EXISTS,"w1",TYPE_INT,1,opt.n);
         aAlgo.newVar(EXISTS,"w2",TYPE_INT,1,opt.n);
