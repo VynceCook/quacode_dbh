@@ -184,7 +184,7 @@ void MonteCarlo::parallelTask() {
 
     OSTREAM << "MonteCarlo start" << std::endl;
     srand(time(NULL));
-    unsigned long int nbIterations = 0;
+    unsigned long int nbIterations = 0, nbSwap = 0;
     std::vector<int> instance(mNbVars);
     unsigned long int error, nError;
     unsigned long int countFreq = 0, freq = 1000;
@@ -241,6 +241,7 @@ void MonteCarlo::parallelTask() {
                             varConflicts[i] = varConflicts[j];
                             varConflicts[j] = aux;
                             swap(iVar,i,j);
+                            nbSwap++;
                         }
                 iVar++;
             }
@@ -257,6 +258,7 @@ void MonteCarlo::parallelTask() {
 #endif
     OSTREAM << "MonteCarlo stop" << std::endl;
     OSTREAM << "NbIterations: " << nbIterations << std::endl;
+    OSTREAM << "NbSwap: " << nbSwap << std::endl;
     // Release the destructor as we have finish everything
     mDestructor.release();
 }
