@@ -205,8 +205,8 @@ void MonteCarlo::parallelTask() {
         k = rand() % mNbVars;
         // Randomly choose a new value
         vSaved = instance[k];
-        if (k < mNbBinderVars) // If in binder, we get value from the updated mDomains data structure
-            instance[k] = mDomains[k][rand() % mDomains[k].size()];
+        if (k < mNbBinderVars) // If in binder, we get value from the updated domains
+            instance[k] = getValue(k,rand() % (mVars[k].dom.max - mVars[k].dom.min + 1));
         else
             instance[k] = mVars[k].dom.min + rand() % (mVars[k].dom.max - mVars[k].dom.min + 1);
         nbIterations++;

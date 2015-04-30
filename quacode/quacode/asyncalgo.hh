@@ -88,7 +88,6 @@ class AsyncAlgo : public Gecode::Support::Runnable {
     /// Copy constructor set private to disable it.
     AsyncAlgo(const AsyncAlgo&);
 
-protected:
     /// Stores the ordered domain of each variable of the binder
     std::vector< std::vector<int> > mDomains;
     /// Mutex for access to mDomains
@@ -152,7 +151,6 @@ public:
     /// Quacode closes the modeling step.
     QUACODE_EXPORT void closeModeling();
 
-
     ///-----------------------------------------------------------------------
     /// ------- These functions are called after the 'closeModeling' function is called
     ///-----------------------------------------------------------------------
@@ -178,6 +176,8 @@ public:
     ///-----------------------------------------------------------------------
     /// Ask a swap of two values \a iV0 and \a iV1 of variable \a iVar
     QUACODE_EXPORT void swap(unsigned int iVar, unsigned int iV0, unsigned int iV1);
+    /// Returns the \a nth value of domain of the given variable \a iVar
+    QUACODE_EXPORT int getValue(int iVar, int nth) const;
     /// Copy the domain of the given variable \a iVar to dest
     QUACODE_EXPORT void copyDomain(int iVar, std::vector<int>& dest) const;
 

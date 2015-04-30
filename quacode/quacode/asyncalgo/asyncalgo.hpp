@@ -75,6 +75,10 @@ forceinline void AsyncAlgo::copyDomainIf(int iVar, const Gecode::Int::IntView& i
             dest.push_back(x);
 }
 
+forceinline int AsyncAlgo::getValue(int iVar, int nth) const {
+    return mDomains[iVar][nth];
+}
+
 forceinline void AsyncAlgo::copyDomain(int iVar, std::vector<int>& dest) const {
     Gecode::Support::Lock lck(*mDomainsMutex[iVar]);
     dest.assign(mDomains[iVar].begin(),mDomains[iVar].end());
