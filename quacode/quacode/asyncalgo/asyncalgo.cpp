@@ -43,6 +43,28 @@ void AsyncAlgo::run() {
     dummy.wait();
 }
 
+void AsyncAlgo::postedEq(const std::string&, int) {
+    std::cerr << "Eq constraint is not implemented" << std::endl;
+    GECODE_NEVER
+}
+
+void AsyncAlgo::postedAnd(bool, const std::string&, bool, const std::string&, TComparisonType, const std::string&) {
+    std::cerr << "And constraint is not implemented" << std::endl;
+    GECODE_NEVER
+}
+void AsyncAlgo::postedOr(bool, const std::string&, bool, const std::string&, TComparisonType, const std::string&) {
+    std::cerr << "Or constraint is not implemented" << std::endl;
+    GECODE_NEVER
+}
+void AsyncAlgo::postedImp(bool, const std::string&, bool, const std::string&, TComparisonType, const std::string&) {
+    std::cerr << "Imp constraint is not implemented" << std::endl;
+    GECODE_NEVER
+}
+void AsyncAlgo::postedXOr(bool, const std::string&, bool, const std::string&, TComparisonType, const std::string&) {
+    std::cerr << "XOr constraint is not implemented" << std::endl;
+    GECODE_NEVER
+}
+
 void AsyncAlgo::postedPlus(int, const std::string&, int, const std::string&, TComparisonType, const std::string&) {
     std::cerr << "Plus constraint is not implemented" << std::endl;
     GECODE_NEVER

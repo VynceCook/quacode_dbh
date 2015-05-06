@@ -49,6 +49,26 @@ forceinline void AsyncAlgo::newAuxVar(const std::string& name, TVarType t, int m
     this->newAuxVarCreated(name,t,min,max);
 }
 
+forceinline void AsyncAlgo::postEq(std::string v0, int val) {
+    this->postedEq(v0,val);
+}
+
+forceinline void AsyncAlgo::postAnd(bool p0, std::string v0, bool p1, std::string v1, TComparisonType cmp, std::string v2) {
+    this->postedAnd(p0,v0,p1,v1,cmp,v2);
+}
+
+forceinline void AsyncAlgo::postOr(bool p0, std::string v0, bool p1, std::string v1, TComparisonType cmp, std::string v2) {
+    this->postedOr(p0,v0,p1,v1,cmp,v2);
+}
+
+forceinline void AsyncAlgo::postImp(bool p0, std::string v0, bool p1, std::string v1, TComparisonType cmp, std::string v2) {
+    this->postedImp(p0,v0,p1,v1,cmp,v2);
+}
+
+forceinline void AsyncAlgo::postXOr(bool p0, std::string v0, bool p1, std::string v1, TComparisonType cmp, std::string v2) {
+    this->postedXOr(p0,v0,p1,v1,cmp,v2);
+}
+
 forceinline void AsyncAlgo::postPlus(int n0, std::string v0, int n1, std::string v1, TComparisonType cmp, std::string v2) {
     this->postedPlus(n0,v0,n1,v1,cmp,v2);
 }

@@ -58,6 +58,18 @@ public:
     /// \a min and \a max are the lower and upper bounds of the domain
     virtual void newAuxVarCreated(const std::string& name, TVarType t, int min, int max);
 
+    /// Function called when a new 'v0 == v2' constraint is posted
+    virtual void postedEq(const std::string& v0, int val);
+
+    /// Function called when a new 'p0v0 && p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
+    virtual void postedAnd(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2);
+    /// Function called when a new 'p0v0 || p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
+    virtual void postedOr(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2);
+    /// Function called when a new 'p0v0 >> p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
+    virtual void postedImp(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2);
+    /// Function called when a new 'p0v0 ^ p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
+    virtual void postedXOr(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2);
+
     /// Function called when a new 'n0*v0 + n1*v1 <cmp> v2' constraint is posted
     virtual void postedPlus(int n0, const std::string& v0, int n1, const std::string& v1, TComparisonType cmp, const std::string& v2);
     /// Function called when a new 'n*v0*v1 <cmp> v2' constraint is posted

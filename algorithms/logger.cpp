@@ -91,6 +91,35 @@ void Logger::globalFailure() {
     OSTREAM << "GLOBAL FAILURE" << std::endl;
 }
 
+void Logger::postedEq(const std::string& v0, int val) {
+    OSTREAM << "POST             = ";
+    OSTREAM << v0 << " == " << val << std::endl;
+}
+
+void Logger::postedAnd(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
+    static char s_ComparisonType[][20] = { "!=", "==", "<", "<=", ">", ">=" };
+    OSTREAM << "POST             = ";
+    OSTREAM << (p0?"":"!") << v0 << " && " << (p1?"":"!") << v1 << " " << s_ComparisonType[cmp] << " " << v2 << std::endl;
+}
+
+void Logger::postedOr(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
+    static char s_ComparisonType[][20] = { "!=", "==", "<", "<=", ">", ">=" };
+    OSTREAM << "POST             = ";
+    OSTREAM << (p0?"":"!") << v0 << " || " << (p1?"":"!") << v1 << " " << s_ComparisonType[cmp] << " " << v2 << std::endl;
+}
+
+void Logger::postedImp(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
+    static char s_ComparisonType[][20] = { "!=", "==", "<", "<=", ">", ">=" };
+    OSTREAM << "POST             = ";
+    OSTREAM << (p0?"":"!") << v0 << " >> " << (p1?"":"!") << v1 << " " << s_ComparisonType[cmp] << " " << v2 << std::endl;
+}
+
+void Logger::postedXOr(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
+    static char s_ComparisonType[][20] = { "!=", "==", "<", "<=", ">", ">=" };
+    OSTREAM << "POST             = ";
+    OSTREAM << (p0?"":"!") << v0 << " ^ " << (p1?"":"!") << v1 << " " << s_ComparisonType[cmp] << " " << v2 << std::endl;
+}
+
 void Logger::postedPlus(int n0, const std::string& v0, int n1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
     static char s_ComparisonType[][20] = { "!=", "==", "<", "<=", ">", ">=" };
     OSTREAM << "POST             = ";

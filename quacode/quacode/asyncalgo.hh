@@ -117,6 +117,18 @@ public:
     /// Quacode adds a new variable auxiliary \a var
     QUACODE_EXPORT void newAuxVar(const std::string& name, TVarType t, int min, int max);
 
+    /// Quacode post a new v0 == v2
+    QUACODE_EXPORT void postEq(std::string v0, int val);
+
+    /// Quacode post a new p0v0 && p1v1 <cmp> v2  (p0, p1 are polarity of literals)
+    QUACODE_EXPORT void postAnd(bool p0, std::string v0, bool p1, std::string v1, TComparisonType cmp, std::string v2);
+    /// Quacode post a new p0v0 || p1v1 <cmp> v2  (p0, p1 are polarity of literals)
+    QUACODE_EXPORT void postOr(bool p0, std::string v0, bool p1, std::string v1, TComparisonType cmp, std::string v2);
+    /// Quacode post a new p0v0 >> p1v1 <cmp> v2  (p0, p1 are polarity of literals)
+    QUACODE_EXPORT void postImp(bool p0, std::string v0, bool p1, std::string v1, TComparisonType cmp, std::string v2);
+    /// Quacode post a new p0v0 ^ p1v1 <cmp> v2  (p0, p1 are polarity of literals)
+    QUACODE_EXPORT void postXOr(bool p0, std::string v0, bool p1, std::string v1, TComparisonType cmp, std::string v2);
+
     /// Quacode post a new n0*v0 + n1*v1 <cmp> v2
     QUACODE_EXPORT void postPlus(int n0, std::string v0, int n1, std::string v1, TComparisonType cmp, std::string v2);
     /// Quacode post a new n*v0*v1 <cmp> v2
@@ -136,6 +148,18 @@ public:
     /// is created. \a t is the type of the variable, and
     /// \a min and \a max are the lower and upper bounds of the domain
     QUACODE_EXPORT virtual void newAuxVarCreated(const std::string& name, TVarType t, int min, int max) = 0;
+
+    /// Function called when a new 'v0 == v2' constraint is posted
+    QUACODE_EXPORT virtual void postedEq(const std::string& v0, int val);
+
+    /// Function called when a new 'p0v0 && p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
+    QUACODE_EXPORT virtual void postedAnd(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2);
+    /// Function called when a new 'p0v0 || p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
+    QUACODE_EXPORT virtual void postedOr(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2);
+    /// Function called when a new 'p0v0 >> p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
+    QUACODE_EXPORT virtual void postedImp(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2);
+    /// Function called when a new 'p0v0 ^ p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
+    QUACODE_EXPORT virtual void postedXOr(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2);
 
     /// Function called when a new 'n0*v0 + n1*v1 <cmp> v2' constraint is posted
     QUACODE_EXPORT virtual void postedPlus(int n0, const std::string& v0, int n1, const std::string& v1, TComparisonType cmp, const std::string& v2);

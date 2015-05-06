@@ -225,16 +225,14 @@ public:
             rel(*this, O[0], IRT_EQ, 1);
         }
 
-        branch(*this, X, INT_VAR_NONE(), INT_VAL_MIN());
-
-//        SIBus::instance().sendConstraint(XOR, vlist_of<TArg>("a")("d")("o6"));
-//        SIBus::instance().sendConstraint(OR , vlist_of<TArg>("c")("o6")("o5"));
-//        SIBus::instance().sendConstraint(IMP, vlist_of<TArg>("c")("d")("o4"));
-//        SIBus::instance().sendConstraint(AND, vlist_of<TArg>("o4")("o5")("o3"));
-//        SIBus::instance().sendConstraint(IMP, vlist_of<TArg>("b")("o3")("o2"));
-//        SIBus::instance().sendConstraint(OR , vlist_of<TArg>("c")("b")("o1"));
-//        SIBus::instance().sendConstraint(AND, vlist_of<TArg>("o1")("o2")("o0"));
-//        SIBus::instance().sendConstraint(EQ , vlist_of<TArg>("o0")(true));
+        aAlgo.postXOr(true,"a",true,"d",CMP_EQ,"o6");
+        aAlgo.postOr(true,"c",true,"o6",CMP_EQ,"o5");
+        aAlgo.postImp(true,"c",true,"d",CMP_EQ,"o4");
+        aAlgo.postAnd(true,"o4",true,"o5",CMP_EQ,"o3");
+        aAlgo.postImp(true,"b",true,"o3",CMP_EQ,"o2");
+        aAlgo.postOr(true,"c",true,"b",CMP_EQ,"o1");
+        aAlgo.postAnd(true,"o1",true,"o2",CMP_EQ,"o0");
+        aAlgo.postEq("o0",true);
 
         // END OF PB DESCRIPTION
         aAlgo.closeModeling();
