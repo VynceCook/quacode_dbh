@@ -105,7 +105,7 @@ void MonteCarlo::postedTimes(int n, const std::string& v0, const std::string& v1
         GECODE_NEVER
     }
     newConstraint[2] = { -1, iVar };
-    mLinearConstraints.push_back(newConstraint);
+    mTimesConstraints.push_back(newConstraint);
 }
 
 void MonteCarlo::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, const std::string& v0) {
@@ -137,7 +137,7 @@ void MonteCarlo::postedLinear(const std::vector<Monom>& poly, TComparisonType cm
 
 unsigned long int MonteCarlo::evalConstraints(const std::vector<int>& instance) {
     unsigned long int error = 0;
-    unsigned long int v;
+    unsigned long int v = 0;
     // Eval times constraints
     for (const auto& constraint : mTimesConstraints) {
         v += abs(constraint[0].coeff * instance[constraint[0].iVar] \
