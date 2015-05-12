@@ -55,7 +55,7 @@ ELSE()
   SET(CMAKE_BUILD_TYPE "${CALLBACK_BUILD_TYPE}" CACHE STRING "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel.")
 ENDIF()
 
-PROJECT(QuacodeCallback)
+PROJECT(QuacodeDrivenByHeuristic)
 SET(CMAKE_CXX_FLAGS "-std=c++11")
 
 SET(CMAKE_VERBOSE_MAKEFILE TRUE)
