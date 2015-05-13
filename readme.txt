@@ -145,6 +145,8 @@ D - The function which is run in another thread when the search starts.
     This is inside this function that the programmer can add its own
     method.
 
+See 'quacode/quacode/asyncalgo.hh' for more details about each function.
+
 ** Group A
 
 These functions are called during the modeling stage in the Quacode thread.
