@@ -32,6 +32,14 @@
 #include <algorithms/test.hh>
 #define OSTREAM std::cerr
 
+#define DEBUG
+
+#ifdef DEBUG
+#define LOG(__s) __s
+#else
+#define LOG(__s) /* void */
+#endif
+
 std::string printComp(TComparisonType cmp) {
     switch (cmp) {
         case CMP_NQ:
@@ -54,8 +62,16 @@ std::string printType(TVarType t) {
     return (t ? "Int" : "Bool");
 }
 
+void TestAlgo::restaureDomaines(int from, int to) {
+    for (int i = from + 1; i <= to; ++i) {
+        mVars[i].curDom = mVars[i].dom;
+    }
+}
+
 TestAlgo::TestAlgo() : AsyncAlgo() {
     mNbVars = 0;
+    mNbBinderVars = 0;
+    mLastChoice = 0;
 }
 
 TestAlgo::~TestAlgo() {
@@ -66,84 +82,106 @@ TestAlgo::~TestAlgo() {
 }
 
 void TestAlgo::newVarCreated(int idx, Gecode::TQuantifier q, const std::string& name, TVarType t, int min, int max) {
-    OSTREAM << "New var " << idx << "/" <<  printType(t) << " : " << name << ", type " << (q == EXISTS ? "E" : "F") << ", dom {" << min << "," << max << "}" <<std::endl;
-    mVars.push_back({q, name, t, min, max});
+    LOG(OSTREAM << "New var " << idx << "/" <<  printType(t) << " : " << name << ", type " << (q == EXISTS ? "E" : "F") << ", dom {" << min << "," << max << "}" <<std::endl);
+    mVars.push_back({idx, q, name, t, min, max, min, max});
+    ++mNbVars;
+    ++mNbBinderVars;
 }
 
 void TestAlgo::newAuxVarCreated(const std::string& name, TVarType t, int min, int max) {
-    OSTREAM << "New auxiliary var " << name << "/" << printType(t) << ", dom {" << min << "," << max << "}" << std::endl;
-    mVarsAux.push_back({0, name, t, min, max});
+    LOG(OSTREAM << "New auxiliary var " << name << "/" << printType(t) << ", dom {" << min << "," << max << "}" << std::endl);
+    mVars.push_back({-1, EXISTS, name, t, min, max, min, max});
+    ++mNbVars;
 }
 
 void TestAlgo::newChoice(int iVar, int min, int max) {
-    OSTREAM << "Chef ! We need to explore others choices : " << iVar << " {" << min << "," << max << "}" << std::endl;
-}
-void TestAlgo::newPromisingScenario(const TScenario& scenario) {
-    OSTREAM << "Chef ! I think this scenario is interesting : ";
-    for (auto s: scenario) {
-        OSTREAM << "{" << s.min << "," << s.max << "}, ";
+    LOG(OSTREAM << "Chef ! We need to explore others choices : " << iVar << " {" << min << "," << max << "}" << std::endl);
+
+    if (iVar < mLastChoice) {
+        restaureDomaines(iVar, mLastChoice);
     }
-    OSTREAM << std::endl;
+
+    mVars[iVar].curDom = {min, max};
+    mLastChoice = iVar;
+
+    for(auto s : mVars) {
+        LOG(OSTREAM << "{" << s.curDom.min << "," << s.curDom.max << "}" << ", ");
+    }
+    LOG(OSTREAM << std::endl);
 }
+
+void TestAlgo::newPromisingScenario(const TScenario& scenario) {
+    //*
+    LOG(OSTREAM << "Chef ! I think this scenario is interesting : ");
+    #ifdef DEBUG
+    for (auto s: scenario) {
+        LOG(OSTREAM << "{" << s.min << "," << s.max << "}, ");
+    }
+    #endif
+    LOG(OSTREAM << std::endl);
+    //*/
+}
+
 void TestAlgo::strategyFound() {
-    OSTREAM << "Chef ! We just found a solution !" << std::endl;
+    LOG(OSTREAM << "Chef ! We just found a solution !" << std::endl);
 }
+
 void TestAlgo::newFailure() {
-    OSTREAM << "Another faillure chef !" << std::endl;
+    LOG(OSTREAM << "Another faillure chef !" << std::endl);
 }
 
 void TestAlgo::globalFailure() {
-    OSTREAM << "It can't be done. ABORT ! ABORT ! ABORT !" << std::endl;
+    LOG(OSTREAM << "It can't be done. ABORT ! ABORT ! ABORT !" << std::endl);
 }
 
 /// Function called when a new 'v0 == v2' constraint is posted
 void TestAlgo::postedEq(const std::string& v0, int val) {
-    OSTREAM << "New constraint Eq " << v0 << "=" << val << std::endl;
+    LOG(OSTREAM << "New constraint Eq " << v0 << "=" << val << std::endl);
 }
 
 /// Function called when a new 'p0v0 && p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
 void TestAlgo::postedAnd(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
-    OSTREAM << "New constraint And " << p0 << ":" << v0 << " && " << p1 << ":" << v1 << " " << printComp(cmp) << " " << v2 << std::endl;
+    LOG(OSTREAM << "New constraint And " << p0 << ":" << v0 << " && " << p1 << ":" << v1 << " " << printComp(cmp) << " " << v2 << std::endl);
 }
 
 /// Function called when a new 'p0v0 || p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
 void TestAlgo::postedOr(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
-    OSTREAM << "New constraint Or " << p0 << ":" << v0 << " || " << p1 << ":" << v1 << " " << printComp(cmp) << " " << v2 << std::endl;
+    LOG(OSTREAM << "New constraint Or " << p0 << ":" << v0 << " || " << p1 << ":" << v1 << " " << printComp(cmp) << " " << v2 << std::endl);
 }
 
 /// Function called when a new 'p0v0 >> p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
 void TestAlgo::postedImp(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
-    OSTREAM << "New constraint Imp " << p0 << ":" << v0 << " >> " << p1 << ":" << v1 << " " << printComp(cmp) << " " << v2 << std::endl;
+    LOG(OSTREAM << "New constraint Imp " << p0 << ":" << v0 << " >> " << p1 << ":" << v1 << " " << printComp(cmp) << " " << v2 << std::endl);
 }
 
 /// Function called when a new 'p0v0 ^ p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
 void TestAlgo::postedXOr(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
-    OSTREAM << "New constraint Xor " << p0 << ":" << v0 << " ^ " << p1 << ":" << v1 << " " << printComp(cmp) << " " << v2 << std::endl;
+    LOG(OSTREAM << "New constraint Xor " << p0 << ":" << v0 << " ^ " << p1 << ":" << v1 << " " << printComp(cmp) << " " << v2 << std::endl);
 }
 
 
 /// Function called when a new 'n0*v0 + n1*v1 <cmp> v2' constraint is posted
 void TestAlgo::postedPlus(int n0, const std::string& v0, int n1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
-    OSTREAM << "New constraint Plus " << n0 << "*" << v0 << " + " << n1 << "*" << v1 << " " << printComp(cmp) << " " << v2 << std::endl;
+    LOG(OSTREAM << "New constraint Plus " << n0 << "*" << v0 << " + " << n1 << "*" << v1 << " " << printComp(cmp) << " " << v2 << std::endl);
 }
 
 /// Function called when a new 'n*v0*v1 <cmp> v2' constraint is posted
 void TestAlgo::postedTimes(int n, const std::string& v0, const std::string& v1, TComparisonType cmp, const std::string& v2) {
-    OSTREAM << "New constraint Times " << n << "*" << v0 << "*" << v1 << " " << printComp(cmp) << " " << v2 << std::endl;
+    LOG(OSTREAM << "New constraint Times " << n << "*" << v0 << "*" << v1 << " " << printComp(cmp) << " " << v2 << std::endl);
 }
 
 /// Function called when a new 'SUM_i n_i*v_i <cmp> v0' constraint is posted
 void TestAlgo::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, const std::string& v0) {
-    OSTREAM << "New constraint Linear ";
+    LOG(OSTREAM << "New constraint Linear ");
     for (auto m : poly) {
-        OSTREAM << m.coeff << "*" << m.varName << " + ";
+        LOG(OSTREAM << m.coeff << "*" << m.varName << " + ");
     }
-    OSTREAM << printComp(cmp) << " " << v0 << std::endl;
+    LOG(OSTREAM << printComp(cmp) << " " << v0 << std::endl);
 }
 
 
 void TestAlgo::parallelTask() {
-    OSTREAM << "THREAD start" << std::endl;
+    LOG(OSTREAM << "THREAD start" << std::endl);
 
     mDestructor.acquire();
     srand(time(NULL));
@@ -154,5 +192,5 @@ void TestAlgo::parallelTask() {
     }
 
     mDestructor.release();
-    OSTREAM << "THREAD stop" << std::endl;
+    LOG(OSTREAM << "THREAD stop" << std::endl);
 }

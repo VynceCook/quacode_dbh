@@ -33,6 +33,16 @@
 #include <quacode/asyncalgo.hh>
 
 class TestAlgo : public AsyncAlgo {
+    /// Variables of the problem
+    struct VarDesc {
+        int idxInBinder;
+        Gecode::TQuantifier q;
+        std::string name;
+        TVarType type;
+        Interval dom;
+        Interval curDom;
+    };
+
     /// Copy constructor set private to disable it.
     TestAlgo(const TestAlgo&);
 
@@ -42,9 +52,13 @@ class TestAlgo : public AsyncAlgo {
     Gecode::Support::Mutex mDestructor;
     /// Stores the number of variables of the binder
     int mNbVars;
+    int mNbBinderVars;
+    int mLastChoice;
 
-    std::vector<TVarDesc> mVars;
-    std::vector<TVarDesc> mVarsAux;
+    std::vector<VarDesc> mVars;
+
+    // Restaure the domain of var in the interval ]from, to]
+    void restaureDomaines(int from, int to);
 
 public:
     /// Main constructor
