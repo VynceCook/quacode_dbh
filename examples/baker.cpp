@@ -44,7 +44,7 @@
 #include <algorithms/logger.hh>
 #include <algorithms/dumb.hh>
 #include <algorithms/montecarlo.hh>
-#include <algorithms/test.hh>
+#include <algorithms/gen.hh>
 
 using namespace Gecode;
 
@@ -183,7 +183,7 @@ int main(int argc, char* argv[])
 
     //Logger aAlgo;
     //DumbAlgorithm aAlgo;
-    TestAlgo aAlgo;
+    GenAlgo aAlgo;
     opt.aAlgo = &aAlgo;
     Script::run<QCSPBaker,QDFS,BakerOptions>(opt);
 

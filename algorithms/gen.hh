@@ -32,7 +32,7 @@
 
 #include <quacode/asyncalgo.hh>
 
-class TestAlgo : public AsyncAlgo {
+class GenAlgo : public AsyncAlgo {
     /// Variables of the problem
     struct VarDesc {
         int idxInBinder;
@@ -45,7 +45,7 @@ class TestAlgo : public AsyncAlgo {
 
     // v0 == v1
     struct CstrEq {
-        VarDesc* v0;
+        size_t v0;
         int v2;
     };
 
@@ -58,41 +58,41 @@ class TestAlgo : public AsyncAlgo {
     // p0v0 op p1v1 cmp v2
     struct CstrBool {
         bool            p0;
-        VarDesc*        v0;
+        size_t          v0;
         TOperationType  op;
         bool            p1;
-        VarDesc*        v1;
+        size_t          v1;
         TComparisonType cmp;
-        VarDesc*        v2;
+        size_t          v2;
     };
 
     // n0*v0 + n1*v1 cmp v2
     struct CstrPlus {
         int n0;
-        VarDesc* v0;
+        size_t v0;
         int n1;
-        VarDesc* v1;
+        size_t v1;
         TComparisonType cmp;
-        VarDesc* v2;
+        size_t v2;
     };
 
     // n*v0*v1 cmp v2
     struct CstrTimes {
         int n;
-        VarDesc* v0;
-        VarDesc* v1;
+        size_t v0;
+        size_t v1;
         TComparisonType cmp;
-        VarDesc* v2;
+        size_t v2;
     };
 
     struct CstrLinear {
-        std::vector<std::pair<int, VarDesc*>> poly;
+        std::vector<std::pair<int, size_t>> poly;
         TComparisonType cmp;
-        VarDesc* v0;
+        size_t v0;
     };
 
     /// Copy constructor set private to disable it.
-    TestAlgo(const TestAlgo&);
+    GenAlgo(const GenAlgo&);
 
     /// Flag to know if the main thread finished its work
     bool mbQuacodeThreadFinished;
@@ -116,7 +116,7 @@ class TestAlgo : public AsyncAlgo {
 
 public:
     /// Main constructor
-    TestAlgo();
+    GenAlgo();
 
     /// Function called when a new variable \a var named \a name
     /// is created at position \a idx in the binder.
@@ -163,10 +163,11 @@ public:
     virtual void parallelTask(void);
 
     // Main destructor
-    virtual ~TestAlgo();
+    virtual ~GenAlgo();
 
 private:
-    VarDesc* findVar(const std::string & name);
+    size_t      findVar(const std::string & name);
+    bool        evaluate(const std::vector<int> & vars);
 };
 
 #endif
