@@ -43,6 +43,54 @@ class TestAlgo : public AsyncAlgo {
         Interval curDom;
     };
 
+    // v0 == v1
+    struct CstrEq {
+        VarDesc* v0;
+        int v2;
+    };
+
+    #define OP_AND 0
+    #define OP_OR  1
+    #define OP_IMP 2
+    #define OP_XOR 3
+    typedef unsigned int TOperationType;
+
+    // p0v0 op p1v1 cmp v2
+    struct CstrBool {
+        bool            p0;
+        VarDesc*        v0;
+        TOperationType  op;
+        bool            p1;
+        VarDesc*        v1;
+        TComparisonType cmp;
+        VarDesc*        v2;
+    };
+
+    // n0*v0 + n1*v1 cmp v2
+    struct CstrPlus {
+        int n0;
+        VarDesc* v0;
+        int n1;
+        VarDesc* v1;
+        TComparisonType cmp;
+        VarDesc* v2;
+    };
+
+    // n*v0*v1 cmp v2
+    struct CstrTimes {
+        int n;
+        VarDesc* v0;
+        VarDesc* v1;
+        TComparisonType cmp;
+        VarDesc* v2;
+    };
+
+    struct CstrLinear {
+        std::vector<std::pair<int, VarDesc*>> poly;
+        TComparisonType cmp;
+        VarDesc* v0;
+    };
+
     /// Copy constructor set private to disable it.
     TestAlgo(const TestAlgo&);
 
@@ -56,6 +104,12 @@ class TestAlgo : public AsyncAlgo {
     int mLastChoice;
 
     std::vector<VarDesc> mVars;
+
+    std::vector<CstrEq    >  mCstrEq;
+    std::vector<CstrBool  >  mCstrBool;
+    std::vector<CstrPlus  >  mCstrPlus;
+    std::vector<CstrTimes >  mCstrTimes;
+    std::vector<CstrLinear>  mCstrLinear;
 
     // Restaure the domain of var in the interval ]from, to]
     void restaureDomaines(int from, int to);
@@ -110,6 +164,9 @@ public:
 
     // Main destructor
     virtual ~TestAlgo();
+
+private:
+    VarDesc* findVar(const std::string & name);
 };
 
 #endif
