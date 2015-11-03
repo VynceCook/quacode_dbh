@@ -27,8 +27,8 @@
  *
  */
 
-#ifndef __TEST_H__
-#define __TEST_H__
+#ifndef __GEN_H__
+#define __GEN_H__
 
 #include <quacode/asyncalgo.hh>
 
