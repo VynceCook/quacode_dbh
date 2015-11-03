@@ -294,13 +294,13 @@ size_t GenAlgo::findVar(const std::string & name) {
 
 bool GenAlgo::evaluate(const std::vector<int> &vars) {
     for (auto it = mCstrEq.begin(); it != mCstrEq.end(); ++it) {
-        if (vars[it->v0] != it->v2) return  false;
+        if (vars[it->v0] != vars[it->v2]) return  false;
     }
 
     for (auto it = mCstrBool.begin(); it != mCstrBool.end(); ++it) {
-        bool v0 = it->p0 ? it->v0 : !it->v0;
-        bool v1 = it->p1 ? it->v1 : !it->v1;
-        bool lhs, rhs = it->v2;
+        bool v0 = it->p0 ? vars[it->v0] : !vars[it->v0];
+        bool v1 = it->p1 ? vars[it->v1] : !vars[it->v1];
+        bool lhs, rhs = vars[it->v2];
         bool res;
 
         switch (it->op) {
