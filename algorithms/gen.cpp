@@ -324,34 +324,7 @@ bool GenAlgo::evaluate(const std::vector<int> &vars) {
                 GECODE_NEVER;
         }
 
-        switch (it->cmp) {
-            case CMP_NQ:
-                res = (lhs != rhs);
-                break;
-
-            case CMP_EQ:
-                res = (lhs == rhs);
-                break;
-
-            case CMP_LQ:
-                res = (lhs < rhs);
-                break;
-
-            case CMP_LE:
-                res = (lhs <= rhs);
-                break;
-
-            case CMP_GQ:
-                res = (lhs > rhs);
-                break;
-
-            case CMP_GR:
-                res = (lhs >= rhs);
-                break;
-
-            default:
-                GECODE_NEVER
-        }
+		res = this->compare(lhs, rhs, it->cmp);
 
         if (!res) return false;
     }
@@ -360,70 +333,18 @@ bool GenAlgo::evaluate(const std::vector<int> &vars) {
         int lhs = it->n0 * vars[it->v0] + it->n1 * vars[it->v1], rhs = vars[it->v2];
         bool res;
 
-        switch (it->cmp) {
-            case CMP_NQ:
-                res = (lhs != rhs);
-                break;
-
-            case CMP_EQ:
-                res = (lhs == rhs);
-                break;
-
-            case CMP_LQ:
-                res = (lhs < rhs);
-                break;
-
-            case CMP_LE:
-                res = (lhs <= rhs);
-                break;
-
-            case CMP_GQ:
-                res = (lhs > rhs);
-                break;
-
-            case CMP_GR:
-                res = (lhs >= rhs);
-                break;
-
-            default:
-                GECODE_NEVER
-        }
-        if (!res) return false;
+		res = this->compare(lhs, rhs, it->cmp);
+        
+		if (!res) return false;
     }
 
     for (auto it = mCstrTimes.begin(); it != mCstrTimes.end(); ++it) {
         int lhs = it->n * vars[it->v0] * vars[it->v1], rhs = vars[it->v2];
         bool res;
 
-        switch (it->cmp) {
-            case CMP_NQ:
-                res = (lhs != rhs);
-                break;
-
-            case CMP_EQ:
-                res = (lhs == rhs);
-                break;
-
-            case CMP_LQ:
-                res = (lhs < rhs);
-                break;
-
-            case CMP_LE:
-                res = (lhs <= rhs);
-                break;
-
-            case CMP_GQ:
-                res = (lhs > rhs);
-                break;
-
-            case CMP_GR:
-                res = (lhs >= rhs);
-                break;
-
-            default:
-                GECODE_NEVER
-        }
-        if (!res) return false;
+		res = this->compare(lhs, rhs, it->cmp);
+        
+		if (!res) return false;
     }
 
     for (auto it = mCstrLinear.begin(); it != mCstrLinear.end(); ++it) {
@@ -435,36 +356,37 @@ bool GenAlgo::evaluate(const std::vector<int> &vars) {
             lhs += jt->first * jt->second;
         }
 
-        switch (it->cmp) {
-            case CMP_NQ:
-                res = (lhs != rhs);
-                break;
+		res = this->compare(lhs, rhs, it->cmp);
 
-            case CMP_EQ:
-                res = (lhs == rhs);
-                break;
-
-            case CMP_LQ:
-                res = (lhs < rhs);
-                break;
-
-            case CMP_LE:
-                res = (lhs <= rhs);
-                break;
-
-            case CMP_GQ:
-                res = (lhs > rhs);
-                break;
-
-            case CMP_GR:
-                res = (lhs >= rhs);
-                break;
-
-            default:
-                GECODE_NEVER
-        }
         if (!res) return false;
     }
 
     return true;
+}
+
+
+inline bool GenAlgo::compare(const int lhs, const int rhs, const TComparisonType cmp){
+	switch (cmp) {
+		case CMP_NQ:
+			return(lhs != rhs);
+
+		case CMP_EQ:
+			return(lhs == rhs);
+
+		case CMP_LQ:
+			return(lhs < rhs);
+
+		case CMP_LE:
+			return(lhs <= rhs);
+
+		case CMP_GQ:
+			return(lhs > rhs);
+
+		case CMP_GR:
+			return(lhs >= rhs);
+
+		default:
+			GECODE_NEVER
+	}
+
 }

@@ -168,6 +168,7 @@ public:
 private:
     size_t      findVar(const std::string & name);
     bool        evaluate(const std::vector<int> & vars);
+	bool        compare(const int lhs, const int rhs, const TComparisonType cmp);
 };
 
 #endif
