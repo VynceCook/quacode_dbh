@@ -324,7 +324,7 @@ bool GenAlgo::evaluate(const std::vector<int> &vars) {
                 GECODE_NEVER;
         }
 
-		res = this->compare(lhs, rhs, it->cmp);
+		res = compare(lhs, rhs, it->cmp);
 
         if (!res) return false;
     }
@@ -333,7 +333,7 @@ bool GenAlgo::evaluate(const std::vector<int> &vars) {
         int lhs = it->n0 * vars[it->v0] + it->n1 * vars[it->v1], rhs = vars[it->v2];
         bool res;
 
-		res = this->compare(lhs, rhs, it->cmp);
+		res = compare(lhs, rhs, it->cmp);
         
 		if (!res) return false;
     }
@@ -342,7 +342,7 @@ bool GenAlgo::evaluate(const std::vector<int> &vars) {
         int lhs = it->n * vars[it->v0] * vars[it->v1], rhs = vars[it->v2];
         bool res;
 
-		res = this->compare(lhs, rhs, it->cmp);
+		res = compare(lhs, rhs, it->cmp);
         
 		if (!res) return false;
     }
@@ -356,7 +356,7 @@ bool GenAlgo::evaluate(const std::vector<int> &vars) {
             lhs += jt->first * jt->second;
         }
 
-		res = this->compare(lhs, rhs, it->cmp);
+		res = compare(lhs, rhs, it->cmp);
 
         if (!res) return false;
     }
@@ -389,4 +389,46 @@ inline bool GenAlgo::compare(const int lhs, const int rhs, const TComparisonType
 			GECODE_NEVER
 	}
 
+}
+
+
+std::vector<std::vector<int>> GenAlgo::generateAll(){
+	std::vector<std::vector<int>> res;
+	std::vector<int> cur(mNbVars);
+	int i;
+
+	while (1){
+		for (i=0; cur[i] == mVars[i].dom.max && i < mNbVars; ++i){
+			cur[i] = mVars[i].dom.min;
+		}
+
+		if (i > mNbVars){
+			// We generated all the possible var sets
+			break;
+		}
+		cur[i] ++;
+
+		if (evaluate(cur)){
+			res.push_back(std::vector<int>(cur));
+		}
+	}
+
+	return(res);
+}
+
+
+std::vector<std::vector<int>> GenAlgo::generateRandom(const int n){
+	std::vector<std::vector<int>> res(n);
+
+	srand(time(NULL));
+
+	// generates random sets of var (useful in genetic algo's initialisation)
+	for (int i=0; i<n; ++i){
+		res[i] = std::vector<int>(mNbVars);
+		for (int j=0; j<mNbVars; ++j){
+			res[i][j] = mVars[j].dom.min + (rand() % (mVars[j].dom.max - mVars[j].dom.min));
+		}
+	}
+
+	return(res);
 }
