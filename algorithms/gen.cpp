@@ -63,6 +63,112 @@ std::string printType(TVarType t) {
     return (t ? "Int" : "Bool");
 }
 
+bool GenAlgo::Constraint::cmpEQ(int lhs, int rhs) {
+    return (lhs == rhs);
+}
+
+bool GenAlgo::Constraint::cmpNQ(int lhs, int rhs) {
+    return (lhs != rhs);
+}
+
+bool GenAlgo::Constraint::cmpGQ(int lhs, int rhs) {
+    return (lhs > rhs);
+}
+
+bool GenAlgo::Constraint::cmpGR(int lhs, int rhs) {
+    return (lhs >= rhs);
+}
+
+bool GenAlgo::Constraint::cmpLQ(int lhs, int rhs) {
+    return (lhs < rhs);
+}
+
+bool GenAlgo::Constraint::cmpLE(int lhs, int rhs) {
+    return (lhs <= rhs);
+}
+
+GenAlgo::Constraint::cmpFuncPtr GenAlgo::Constraint::getCmpPtr(TComparisonType t) {
+    switch (t) {
+        case CMP_NQ:
+            return &GenAlgo::Constraint::cmpNQ;
+        case CMP_EQ:
+            return &GenAlgo::Constraint::cmpEQ;
+        case CMP_LQ:
+            return &GenAlgo::Constraint::cmpLQ;
+        case CMP_LE:
+            return &GenAlgo::Constraint::cmpLE;
+        case CMP_GQ:
+            return &GenAlgo::Constraint::cmpGQ;
+        case CMP_GR:
+            return &GenAlgo::Constraint::cmpGR;
+    }
+
+    return nullptr;
+}
+
+
+GenAlgo::CstrEq::CstrEq(size_t v0, int v2):
+    v0(v0), v2(v2)
+{}
+
+bool GenAlgo::CstrEq::evaluate(const std::vector<int> & c) {
+    return c[v0] == c[v2];
+}
+
+GenAlgo::CstrBool::CstrBool(bool p0, size_t v0, opFuncPtr op, bool p1, size_t v1, cmpFuncPtr cmp, size_t v2):
+    p0(p0), v0(v0), op(op), p1(p1), v1(v1), cmp(cmp), v2(v2)
+{}
+
+bool GenAlgo::CstrBool::evaluate(const std::vector<int> & c) {
+    return cmp(op(p0, c[v0], p1, c[v1]), c[v2]);
+}
+
+bool GenAlgo::CstrBool::opAnd(bool p0, bool v0, bool p1, bool v1) {
+    return (p0 ? v0 : !v0) && (p1 ? v1 : !v1);
+}
+
+bool GenAlgo::CstrBool::opOr(bool p0, bool v0, bool p1, bool v1) {
+    return (p0 ? v0 : !v0) || (p1 ? v1 : !v1);
+}
+
+bool GenAlgo::CstrBool::opImp(bool p0, bool v0, bool p1, bool v1) {
+    return !((p0 ? v0 : !v0) && !(p1 ? v1 : !v1));
+}
+
+bool GenAlgo::CstrBool::opXor(bool p0, bool v0, bool p1, bool v1) {
+    return (!(p0 ? v0 : !v0) != !(p1 ? v1 : !v1));
+}
+
+GenAlgo::CstrPlus::CstrPlus(int n0, size_t v0, int n1, size_t v1, cmpFuncPtr cmp, size_t v2):
+    n0(n0), v0(v0), n1(n1), v1(v1), cmp(cmp), v2(v2)
+{}
+
+bool GenAlgo::CstrPlus::evaluate(const std::vector<int> & c) {
+    return cmp(n0 * c[v0] + n1 * c[v1], v2);
+}
+
+GenAlgo::CstrTimes::CstrTimes(int n, size_t v0, size_t v1, cmpFuncPtr cmp, size_t v2):
+    n(n), v0(v0), v1(v1), cmp(cmp), v2(v2)
+{}
+
+bool GenAlgo::CstrTimes::evaluate(const std::vector<int> & c) {
+    return cmp(n * c[v0] * c[v1], v2);
+}
+
+GenAlgo::CstrLinear::CstrLinear(const std::vector<std::pair<int, size_t>> &poly, cmpFuncPtr cmp, size_t v0):
+    poly(poly), cmp(cmp), v0(v0)
+{}
+
+bool GenAlgo::CstrLinear::evaluate(const std::vector<int> & c) {
+    int sum = 0;
+
+    for (auto it = poly.begin(); it != poly.end(); ++it) {
+        sum += it->first * c[it->second];
+    }
+
+    return cmp(sum, c[v0]);
+}
+
 void GenAlgo::restaureDomaines(int from, int to) {
     for (int i = from + 1; i <= to; ++i) {
         mVars[i].curDom = mVars[i].dom;
@@ -77,6 +183,10 @@ GenAlgo::GenAlgo() : AsyncAlgo() {
 
 GenAlgo::~GenAlgo() {
     mbQuacodeThreadFinished = true;
+
+    for (auto it = mCstrs.begin(); it != mCstrs.end(); ++it) {
+        delete *it;
+    }
 
     mDestructor.acquire();
     mDestructor.release();
@@ -142,7 +252,8 @@ void GenAlgo::postedEq(const std::string& v0, int val) {
     size_t v0Idx = findVar(v0);
 
     if (v0Idx != (size_t)-1) {
-        mCstrEq.push_back({v0Idx, val});
+        Constraint * tmp = new CstrEq(v0Idx, val);
+        mCstrs.push_back(tmp);
     }
     else {
         OSTREAM << "Can't find " << v0 << std::endl;
@@ -156,7 +267,8 @@ void GenAlgo::postedAnd(bool p0, const std::string& v0, bool p1, const std::stri
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
-        mCstrBool.push_back({p0, v0Idx, OP_AND, p1, v1Idx, cmp, v2Idx});
+        Constraint * tmp = new CstrBool(p0, v0Idx, &CstrBool::opAnd, p1, v1Idx, Constraint::getCmpPtr(cmp), v2Idx);
+        mCstrs.push_back(tmp);
     }
     else {
         OSTREAM << "Can't find on of the variables " << v0 << ", " << v1 << ", " << v2 << std::endl;
@@ -170,7 +282,8 @@ void GenAlgo::postedOr(bool p0, const std::string& v0, bool p1, const std::strin
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
-        mCstrBool.push_back({p0, v0Idx, OP_OR, p1, v1Idx, cmp, v2Idx});
+        Constraint * tmp = new CstrBool(p0, v0Idx, &CstrBool::opOr, p1, v1Idx, Constraint::getCmpPtr(cmp), v2Idx);
+        mCstrs.push_back(tmp);
     }
     else {
         OSTREAM << "Can't find on of the variables " << v0 << ", " << v1 << ", " << v2 << std::endl;
@@ -184,7 +297,8 @@ void GenAlgo::postedImp(bool p0, const std::string& v0, bool p1, const std::stri
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
-        mCstrBool.push_back({p0, v0Idx, OP_IMP, p1, v1Idx, cmp, v2Idx});
+        Constraint * tmp = new CstrBool(p0, v0Idx, &CstrBool::opImp, p1, v1Idx, Constraint::getCmpPtr(cmp), v2Idx);
+        mCstrs.push_back(tmp);
     }
     else {
         OSTREAM << "Can't find on of the variables " << v0 << ", " << v1 << ", " << v2 << std::endl;
@@ -198,7 +312,8 @@ void GenAlgo::postedXOr(bool p0, const std::string& v0, bool p1, const std::stri
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
-        mCstrBool.push_back({p0, v0Idx, OP_XOR, p1, v1Idx, cmp, v2Idx});
+        Constraint * tmp = new CstrBool(p0, v0Idx, &CstrBool::opXor, p1, v1Idx, Constraint::getCmpPtr(cmp), v2Idx);
+        mCstrs.push_back(tmp);
     }
     else {
         OSTREAM << "Can't find on of the variables " << v0 << ", " << v1 << ", " << v2 << std::endl;
@@ -213,7 +328,8 @@ void GenAlgo::postedPlus(int n0, const std::string& v0, int n1, const std::strin
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
-        mCstrPlus.push_back({n0, v0Idx, n1, v1Idx, cmp, v2Idx});
+        Constraint * tmp = new CstrPlus(n0, v0Idx, n1, v1Idx, Constraint::getCmpPtr(cmp), v2Idx);
+        mCstrs.push_back(tmp);
     }
     else {
         OSTREAM << "Can't find on of the variables " << v0 << ", " << v1 << ", " << v2 << std::endl;
@@ -227,7 +343,8 @@ void GenAlgo::postedTimes(int n, const std::string& v0, const std::string& v1, T
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
-        mCstrTimes.push_back({n, v0Idx, v1Idx, cmp, v2Idx});
+        Constraint * tmp = new CstrTimes(n, v0Idx, v1Idx, Constraint::getCmpPtr(cmp), v2Idx);
+        mCstrs.push_back(tmp);
     }
     else {
         OSTREAM << "Can't find on of the variables " << v0 << ", " << v1 << ", " << v2 << std::endl;
@@ -248,20 +365,21 @@ void GenAlgo::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, 
     size_t v0Idx = findVar(v0);
 
     if (v0Idx != (size_t)-1) {
-        mCstrLinear.push_back({{}, cmp, v0Idx});
+        Constraint * tmp = new CstrLinear({}, Constraint::getCmpPtr(cmp), v0Idx);
+        mCstrs.push_back(tmp);
 
         for (auto it = poly.begin(); it != poly.end(); ++it) {
             size_t viIdx = findVar(it->varName);
 
             if (viIdx != (size_t)-1) {
-                mCstrLinear.back().poly.push_back(std::make_pair(it->coeff, viIdx));
+                dynamic_cast<CstrLinear*>(tmp)->poly.push_back(std::make_pair(it->coeff, viIdx));
             }
             else {
                 OSTREAM << "Can't find " << it->varName << std::endl;
-                mCstrLinear.pop_back();
                 GECODE_NEVER
             }
         }
+
     }
     else {
         OSTREAM << "Can't find variable " << v0 << std::endl;
@@ -275,7 +393,7 @@ void GenAlgo::parallelTask() {
 
     OSTREAM << "Calling foo kernel" << std::endl;
     foo();
-    
+
     mDestructor.acquire();
     srand(time(NULL));
     for ( ; ; ) {
@@ -298,122 +416,31 @@ size_t GenAlgo::findVar(const std::string & name) {
 }
 
 bool GenAlgo::evaluate(const std::vector<int> &vars) {
-    for (auto it = mCstrEq.begin(); it != mCstrEq.end(); ++it) {
-        if (vars[it->v0] != vars[it->v2]) return  false;
-    }
-
-    for (auto it = mCstrBool.begin(); it != mCstrBool.end(); ++it) {
-        bool v0 = it->p0 ? vars[it->v0] : !vars[it->v0];
-        bool v1 = it->p1 ? vars[it->v1] : !vars[it->v1];
-        bool lhs, rhs = vars[it->v2];
-        bool res;
-
-        switch (it->op) {
-            case OP_AND:
-                lhs = v0 && v1;
-                break;
-
-            case OP_OR:
-                lhs = v0 || v1;
-                break;
-
-            case OP_IMP:
-                lhs = !(v0 && !v1);
-                break;
-
-            case OP_XOR:
-                lhs = (!v0 != !v1);
-                break;
-
-            default:
-                GECODE_NEVER;
-        }
-
-		res = compare(lhs, rhs, it->cmp);
-
-        if (!res) return false;
-    }
-
-    for (auto it = mCstrPlus.begin(); it != mCstrPlus.end(); ++it) {
-        int lhs = it->n0 * vars[it->v0] + it->n1 * vars[it->v1], rhs = vars[it->v2];
-        bool res;
-
-		res = compare(lhs, rhs, it->cmp);
-        
-		if (!res) return false;
-    }
-
-    for (auto it = mCstrTimes.begin(); it != mCstrTimes.end(); ++it) {
-        int lhs = it->n * vars[it->v0] * vars[it->v1], rhs = vars[it->v2];
-        bool res;
-
-		res = compare(lhs, rhs, it->cmp);
-        
-		if (!res) return false;
-    }
-
-    for (auto it = mCstrLinear.begin(); it != mCstrLinear.end(); ++it) {
-        int lhs = 0;
-        int rhs = vars[it->v0];
-        bool res;
-
-        for (auto jt = it->poly.begin(); jt != it->poly.end(); ++jt) {
-            lhs += jt->first * jt->second;
-        }
-
-		res = compare(lhs, rhs, it->cmp);
-
-        if (!res) return false;
+    for (auto it = mCstrs.begin(); it != mCstrs.end(); ++it) {
+        if (!(*it)->evaluate(vars)) return false;
     }
 
     return true;
 }
 
 
-inline bool GenAlgo::compare(const int lhs, const int rhs, const TComparisonType cmp){
-	switch (cmp) {
-		case CMP_NQ:
-			return(lhs != rhs);
-
-		case CMP_EQ:
-			return(lhs == rhs);
-
-		case CMP_LQ:
-			return(lhs < rhs);
-
-		case CMP_LE:
-			return(lhs <= rhs);
-
-		case CMP_GQ:
-			return(lhs > rhs);
-
-		case CMP_GR:
-			return(lhs >= rhs);
-
-		default:
-			GECODE_NEVER
-	}
-
-}
-
-
-std::vector<std::vector<int>> GenAlgo::generateAll(){
+std::vector<std::vector<int>> GenAlgo::generateAll() {
 	std::vector<std::vector<int>> res;
 	std::vector<int> cur(mNbVars);
 	int i;
 
-	while (1){
-		for (i=0; cur[i] == mVars[i].dom.max && i < mNbVars; ++i){
+	while (1) {
+		for (i=0; cur[i] == mVars[i].dom.max && i < mNbVars; ++i) {
 			cur[i] = mVars[i].dom.min;
 		}
 
-		if (i > mNbVars){
+		if (i > mNbVars) {
 			// We generated all the possible var sets
 			break;
 		}
 		cur[i] ++;
 
-		if (evaluate(cur)){
+		if (evaluate(cur)) {
 			res.push_back(std::vector<int>(cur));
 		}
 	}
@@ -422,15 +449,15 @@ std::vector<std::vector<int>> GenAlgo::generateAll(){
 }
 
 
-std::vector<std::vector<int>> GenAlgo::generateRandom(const int n){
+std::vector<std::vector<int>> GenAlgo::generateRandom(const int n) {
 	std::vector<std::vector<int>> res(n);
 
 	srand(time(NULL));
 
 	// generates random sets of var (useful in genetic algo's initialisation)
-	for (int i=0; i<n; ++i){
+	for (int i=0; i<n; ++i) {
 		res[i] = std::vector<int>(mNbVars);
-		for (int j=0; j<mNbVars; ++j){
+		for (int j=0; j<mNbVars; ++j) {
 			res[i][j] = mVars[j].dom.min + (rand() % (mVars[j].dom.max - mVars[j].dom.min));
 		}
 	}
