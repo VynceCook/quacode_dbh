@@ -30,6 +30,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <algorithms/gen.hh>
+#include <algorithms/kernels.hh>
 #define OSTREAM std::cerr
 
 //#define DEBUG
@@ -272,6 +273,9 @@ void GenAlgo::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, 
 void GenAlgo::parallelTask() {
     LOG(OSTREAM << "THREAD start" << std::endl);
 
+    OSTREAM << "Calling foo kernel" << std::endl;
+    foo();
+    
     mDestructor.acquire();
     srand(time(NULL));
     for ( ; ; ) {
@@ -279,6 +283,7 @@ void GenAlgo::parallelTask() {
 
         Gecode::Support::Thread::sleep(300);
     }
+
 
     mDestructor.release();
     LOG(OSTREAM << "THREAD stop" << std::endl);
