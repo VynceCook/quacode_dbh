@@ -43,52 +43,83 @@ class GenAlgo : public AsyncAlgo {
         Interval curDom;
     };
 
-    // v0 == v1
-    struct CstrEq {
-        size_t v0;
-        int v2;
+    struct Constraint {
+        typedef bool (*cmpFuncPtr)(int, int);
+        typedef bool (*opFuncPtr)(bool, bool, bool, bool);
+
+        virtual ~Constraint() {};
+        virtual bool evaluate(const std::vector<int> &) = 0;
+
+        static bool cmpEQ(int, int);
+        static bool cmpNQ(int, int);
+        static bool cmpGQ(int, int);
+        static bool cmpGR(int, int);
+        static bool cmpLQ(int, int);
+        static bool cmpLE(int, int);
+        static cmpFuncPtr getCmpPtr(TComparisonType);
     };
 
-    #define OP_AND 0
-    #define OP_OR  1
-    #define OP_IMP 2
-    #define OP_XOR 3
-    typedef unsigned int TOperationType;
+    // v0 == v1
+    struct CstrEq: Constraint {
+        size_t v0;
+        int v2;
+
+        CstrEq(size_t v0, int v2);
+        virtual bool evaluate(const std::vector<int> &);
+    };
 
     // p0v0 op p1v1 cmp v2
-    struct CstrBool {
-        bool            p0;
-        size_t          v0;
-        TOperationType  op;
-        bool            p1;
-        size_t          v1;
-        TComparisonType cmp;
-        size_t          v2;
+    struct CstrBool: Constraint {
+        bool        p0;
+        size_t      v0;
+        opFuncPtr   op;
+        bool        p1;
+        size_t      v1;
+        cmpFuncPtr  cmp;
+        size_t      v2;
+
+        CstrBool(bool p0, size_t v0, opFuncPtr op, bool p1, size_t v1, cmpFuncPtr cmp, size_t v2);
+        virtual bool evaluate(const std::vector<int> &);
+
+        static bool opAnd(bool, bool, bool, bool);
+        static bool opOr(bool, bool, bool, bool);
+        static bool opImp(bool, bool, bool, bool);
+        static bool opXor(bool, bool, bool, bool);
     };
 
     // n0*v0 + n1*v1 cmp v2
-    struct CstrPlus {
+    struct CstrPlus: Constraint {
         int n0;
         size_t v0;
         int n1;
         size_t v1;
-        TComparisonType cmp;
+        cmpFuncPtr cmp;
         size_t v2;
+
+        CstrPlus(int n0, size_t v0, int n1, size_t v1, cmpFuncPtr cmp, size_t v2);
+        virtual bool evaluate(const std::vector<int> &);
     };
 
     // n*v0*v1 cmp v2
-    struct CstrTimes {
+    struct CstrTimes: Constraint {
         int n;
         size_t v0;
         size_t v1;
-        TComparisonType cmp;
+        cmpFuncPtr cmp;
         size_t v2;
+
+        CstrTimes(int n, size_t v0, size_t v1, cmpFuncPtr cmp, size_t v2);
+        virtual bool evaluate(const std::vector<int> &);
     };
 
-    struct CstrLinear {
+    struct CstrLinear: Constraint {
         std::vector<std::pair<int, size_t>> poly;
-        TComparisonType cmp;
+        cmpFuncPtr cmp;
         size_t v0;
+
+        ~CstrLinear() {}
+        CstrLinear(const std::vector<std::pair<int, size_t>> &poly, cmpFuncPtr cmp, size_t v0);
+        virtual bool evaluate(const std::vector<int> &);
     };
 
     /// Copy constructor set private to disable it.
@@ -105,11 +136,7 @@ class GenAlgo : public AsyncAlgo {
 
     std::vector<VarDesc> mVars;
 
-    std::vector<CstrEq    >  mCstrEq;
-    std::vector<CstrBool  >  mCstrBool;
-    std::vector<CstrPlus  >  mCstrPlus;
-    std::vector<CstrTimes >  mCstrTimes;
-    std::vector<CstrLinear>  mCstrLinear;
+    std::vector<Constraint*>  mCstrs;
 
     // Restaure the domain of var in the interval ]from, to]
     void restaureDomaines(int from, int to);
@@ -168,7 +195,6 @@ public:
 private:
     size_t      findVar(const std::string & name);
     bool        evaluate(const std::vector<int> & vars);
-	bool        compare(const int lhs, const int rhs, const TComparisonType cmp);
 	std::vector<std::vector<int>> generateAll();
 	std::vector<std::vector<int>> generateRandom(const int n);
 };
