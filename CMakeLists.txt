@@ -36,6 +36,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 SET(GECODE_SRC "${CMAKE_SOURCE_DIR}" CACHE PATH "Path where GeCode source is installed")
 SET(GECODE_BIN "${GECODE_SRC}" CACHE PATH "Path where GeCode libs and binaries are installed")
+SET(QUACODE_USE_CUDA false CACHE BOOL "Set to true to enable Cuda")
 
 # If the user specifies -DCMAKE_BUILD_TYPE on the command line, take their definition
 # and dump it in the cache along with proper documentation, otherwise set CMAKE_BUILD_TYPE
@@ -100,12 +101,14 @@ IF(NOT Threads_FOUND)
     MESSAGE(FATAL_ERROR "Thread (pthread) library are needed, consider to install them or disable threads.")
 ENDIF ()
 
-FIND_PACKAGE(CUDA)
-
-IF(NOT CUDA_FOUND)
-    MESSAGE(FATAL_ERROR "Cuda library are needed.")
+IF(QUACODE_USE_CUDA)
+    FIND_PACKAGE(CUDA)
+    IF(NOT CUDA_FOUND)
+        MESSAGE(FATAL_ERROR "Cuda library are needed.")
+    ENDIF()
+    SET(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-gencode arch=compute_50,code=sm_50)
+    ADD_DEFINITIONS(-DQUACODE_USE_CUDA)
 ENDIF()
-SET(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-gencode arch=compute_50,code=sm_50)
 
 INCLUDE(CheckCXXCompilerFlag)
 SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_MODULE_PATH})
@@ -146,7 +149,9 @@ ENDIF()
 FILE(GLOB ALGORITHMS_HEADERS algorithms/*.hh)
 FILE(GLOB ALGORITHMS_HPP algorithms/*.hpp)
 FILE(GLOB ALGORITHMS_SRCS algorithms/*.cpp)
-FILE(GLOB ALGORITHMS_CUDA_SRCS algorithms/*.cu)
+IF(QUACODE_USE_CUDA)
+    FILE(GLOB ALGORITHMS_CUDA_SRCS algorithms/*.cu)
+ENDIF()
 SET(ALGORITHMS_SRCS
     ${ALGORITHMS_SRCS}
     quacode/quacode/asyncalgo/asyncalgo.cpp
@@ -167,12 +172,15 @@ SOURCE_GROUP("Hpp Files" REGULAR_EXPRESSION ".hpp")
 SET_SOURCE_FILES_PROPERTIES(${ALL_HEADERS} PROPERTIES HEADER_FILE_ONLY TRUE)
 SET_SOURCE_FILES_PROPERTIES(${ALL_HPP} PROPERTIES HEADER_FILE_ONLY TRUE)
 
-CUDA_COMPILE(ALGORITHMS_CUDA_OBJS ${ALGORITHMS_CUDA_SRCS})
 
 # Add targets for examples
 FOREACH (example ${CALLBACK_EXAMPLES_SRCS})
   GET_FILENAME_COMPONENT(exampleBin ${example} NAME_WE)
-  CUDA_ADD_EXECUTABLE(${exampleBin} ${ALGORITHMS_CUDA_OBJS} ${ALGORITHMS_SRCS} ${ALGORITHMS_HEADERS} ${ALGORITHMS_HPP} ${example})
+  IF(QUACODE_USE_CUDA)
+      CUDA_ADD_EXECUTABLE(${exampleBin} ${ALGORITHMS_CUDA_SRCS} ${ALGORITHMS_CUDA_OBJS} ${ALGORITHMS_SRCS} ${ALGORITHMS_HEADERS} ${ALGORITHMS_HPP} ${example})
+  ELSE(QUACODE_USE_CUDA)
+      ADD_EXECUTABLE(${exampleBin} ${ALGORITHMS_SRCS} ${ALGORITHMS_HEADERS} ${ALGORITHMS_HPP} ${example})
+  ENDIF()
   TARGET_LINK_LIBRARIES(${exampleBin} ${QUACODE_LIBRARIES} ${GECODE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
   # set -static, when STATIC_LINKING is TRUE and set LINK_SEARCH_END_STATIC
