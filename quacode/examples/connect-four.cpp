@@ -306,30 +306,12 @@ public:
           be = expr(*this, board[offSet+i*row+j] != (((k%2)==0)?Black:Red));
           for (int jj=j+1; jj < row; jj++)
             be = expr(*this, be && (board[offSet+i*row+jj] == Nil));
-<<<<<<< HEAD
-          rel(*this, pos[offSet+i*row+j] == be, ICL_DOM);
-=======
           rel(*this, pos[offSet+i*row+j] == be, IPL_DOM);
->>>>>>> quacode_branch
         }
 
     for (int k=0, offSet = 0; k<nbDecisionVar; k++, offSet += row*col)
       if (k == 0) {
         for (int i=0; i < col; i++) {
-<<<<<<< HEAD
-            rel(*this, pos[offSet+i*row], ICL_DOM);
-            rel(*this, pos[offSet+i*row+row-1], ICL_DOM);
-            rel(*this, !mh[0*col+i] >> (board[offSet+i*row] == Nil), ICL_DOM);
-            rel(*this,  mh[0*col+i] >> (board[offSet+i*row] == Red), ICL_DOM);
-        }
-      } else {
-        for (int i=0; i < col; i++) {
-          rel(*this, (h[(k-1)*col+i] == row) == !pos[offSet+i*row+row-1], ICL_DOM);
-          for (int j=0; j < row; j++) {
-            rel(*this, (h[(k-1)*col+i] == j) >> pos[offSet+i*row+j], ICL_DOM);
-            rel(*this, (!mh[k*col+i] && (h[(k-1)*col+i] == j)) >> (board[offSet+i*row+j] == Nil), ICL_DOM);
-            rel(*this, ( mh[k*col+i] && (h[(k-1)*col+i] == j)) >> (board[offSet+i*row+j] == (((k%2)==0)?Red:Black)), ICL_DOM);
-=======
             rel(*this, pos[offSet+i*row], IPL_DOM);
             rel(*this, pos[offSet+i*row+row-1], IPL_DOM);
             rel(*this, !mh[0*col+i] >> (board[offSet+i*row] == Nil), IPL_DOM);
@@ -342,7 +324,6 @@ public:
             rel(*this, (h[(k-1)*col+i] == j) >> pos[offSet+i*row+j], IPL_DOM);
             rel(*this, (!mh[k*col+i] && (h[(k-1)*col+i] == j)) >> (board[offSet+i*row+j] == Nil), IPL_DOM);
             rel(*this, ( mh[k*col+i] && (h[(k-1)*col+i] == j)) >> (board[offSet+i*row+j] == (((k%2)==0)?Red:Black)), IPL_DOM);
->>>>>>> quacode_branch
           }
         }
       }
@@ -351,13 +332,8 @@ public:
     for (int k=1, offSet = row*col; k<nbDecisionVar; k++, offSet += row*col)
       for (int i=0; i < col; i++)
         for (int j=0; j < row; j++) {
-<<<<<<< HEAD
-          rel(*this, (board[(offSet-row*col)+i*row+j] == Black) >> (board[offSet+i*row+j] == Black), ICL_DOM);
-          rel(*this, (board[(offSet-row*col)+i*row+j] == Red) >> (board[offSet+i*row+j] == Red), ICL_DOM);
-=======
           rel(*this, (board[(offSet-row*col)+i*row+j] == Black) >> (board[offSet+i*row+j] == Black), IPL_DOM);
           rel(*this, (board[(offSet-row*col)+i*row+j] == Red) >> (board[offSet+i*row+j] == Red), IPL_DOM);
->>>>>>> quacode_branch
         }
 
     // Link height and board state
@@ -365,19 +341,11 @@ public:
       for (int i=0; i < col; i++)
         for (int j=0; j < row+1; j++)
           if (j==0)
-<<<<<<< HEAD
-            rel(*this, (board[offSet+i*row] == Nil) >> (h[k*col+i] == 0), ICL_DOM);
-          else if (j==row)
-            rel(*this, (board[offSet+i*row+j-1] != Nil) >> (h[k*col+i] == row), ICL_DOM);
-          else
-            rel(*this, ((board[offSet+i*row+j-1] != Nil) && (board[offSet+i*row+j] == Nil)) >> (h[k*col+i] == j), ICL_DOM);
-=======
             rel(*this, (board[offSet+i*row] == Nil) >> (h[k*col+i] == 0), IPL_DOM);
           else if (j==row)
             rel(*this, (board[offSet+i*row+j-1] != Nil) >> (h[k*col+i] == row), IPL_DOM);
           else
             rel(*this, ((board[offSet+i*row+j-1] != Nil) && (board[offSet+i*row+j] == Nil)) >> (h[k*col+i] == j), IPL_DOM);
->>>>>>> quacode_branch
 
     // Detect lines
     BoolVarArgs l;
@@ -411,50 +379,25 @@ public:
                 lk << bRed;
                 l << bRed;
                 if (k>0)
-<<<<<<< HEAD
-                  rel(*this,(lineMove[k-1] || (x[0] != Red) || (x[1] != Red) || (x[2] != Red) || (x[3] != Red)) == !bRed, ICL_DOM);
-                else
-                  rel(*this,((x[0] != Red) || (x[1] != Red) || (x[2] != Red) || (x[3] != Red)) == !bRed, ICL_DOM);
-=======
                   rel(*this,(lineMove[k-1] || (x[0] != Red) || (x[1] != Red) || (x[2] != Red) || (x[3] != Red)) == !bRed, IPL_DOM);
                 else
                   rel(*this,((x[0] != Red) || (x[1] != Red) || (x[2] != Red) || (x[3] != Red)) == !bRed, IPL_DOM);
->>>>>>> quacode_branch
               } else {
                 BoolVar bBlack(*this,0,1);
                 lk << bBlack;
                 l << bBlack;
-<<<<<<< HEAD
-                rel(*this,(lineMove[k-1] || (x[0] != Black) || (x[1] != Black) || (x[2] != Black) || (x[3] != Black)) == !bBlack, ICL_DOM);
-=======
                 rel(*this,(lineMove[k-1] || (x[0] != Black) || (x[1] != Black) || (x[2] != Black) || (x[3] != Black)) == !bBlack, IPL_DOM);
->>>>>>> quacode_branch
               }
             }
           }
         }
       }
       if (k>0) lk << lineMove[k-1];
-<<<<<<< HEAD
-      rel(*this, BOT_OR, lk, lineMove[k], ICL_DOM);
-=======
       rel(*this, BOT_OR, lk, lineMove[k], IPL_DOM);
->>>>>>> quacode_branch
     }
     line = BoolVarArray(*this, l);
 
     // Set GameState variables
-<<<<<<< HEAD
-    rel(*this, gameWinner[0] == Nil, ICL_DOM);
-    for (int k=1; k < nbDecisionVar; k++) {
-      rel(*this, (gameWinner[k-1] == Black) >> (gameWinner[k] == Black), ICL_DOM);
-      rel(*this, (gameWinner[k-1] == Red) >> (gameWinner[k] == Red), ICL_DOM);
-      rel(*this, ((gameWinner[k-1] == Nil) && !lineMove[k]) >> (gameWinner[k] == Nil), ICL_DOM);
-      if ((k%2) == 0)
-        rel(*this, ((gameWinner[k-1] == Nil) && lineMove[k]) >> (gameWinner[k] == Red), ICL_DOM);
-      else
-        rel(*this, ((gameWinner[k-1] == Nil) && lineMove[k]) >> (gameWinner[k] == Black), ICL_DOM);
-=======
     rel(*this, gameWinner[0] == Nil, IPL_DOM);
     for (int k=1; k < nbDecisionVar; k++) {
       rel(*this, (gameWinner[k-1] == Black) >> (gameWinner[k] == Black), IPL_DOM);
@@ -464,36 +407,22 @@ public:
         rel(*this, ((gameWinner[k-1] == Nil) && lineMove[k]) >> (gameWinner[k] == Red), IPL_DOM);
       else
         rel(*this, ((gameWinner[k-1] == Nil) && lineMove[k]) >> (gameWinner[k] == Black), IPL_DOM);
->>>>>>> quacode_branch
 
       if (opt.QCSPmodel() == 3) {
         // If not winner before, only current player have a chance to win
         // the game at this move -- NOT IN INITIAL MODEL
         if ((k%2) == 0)
-<<<<<<< HEAD
-          rel(*this, (gameWinner[k-1] == Nil) >> (gameWinner[k] != Black), ICL_DOM);
-        else
-          rel(*this, (gameWinner[k-1] == Nil) >> (gameWinner[k] != Red), ICL_DOM);
-=======
           rel(*this, (gameWinner[k-1] == Nil) >> (gameWinner[k] != Black), IPL_DOM);
         else
           rel(*this, (gameWinner[k-1] == Nil) >> (gameWinner[k] != Red), IPL_DOM);
->>>>>>> quacode_branch
       }
     }
 
     // For first move, symmetry is broken by removing the rightmost (upper): col - (col div 2)
-<<<<<<< HEAD
-    if (kOffset == 0) rel(*this, m[0], IRT_LE, col - (col / 2), ICL_DOM);
-
-    // Force a winner at the end of the game
-    rel(*this, gameWinner[nbDecisionVar-1], IRT_EQ, Red, ICL_DOM);
-=======
     if (kOffset == 0) rel(*this, m[0], IRT_LE, col - (col / 2), IPL_DOM);
 
     // Force a winner at the end of the game
     rel(*this, gameWinner[nbDecisionVar-1], IRT_EQ, Red, IPL_DOM);
->>>>>>> quacode_branch
 
     if (opt.QCSPmodel() == 1) {
     // Set the last board full.
@@ -502,11 +431,7 @@ public:
     // doesn't have to be filled.
     for (int i=0; i < col; i++)
       for (int j=0; j < row; j++)
-<<<<<<< HEAD
-        rel(*this, board[(nbDecisionVar-1)*row*col+i*row+j] != Nil, ICL_DOM);
-=======
         rel(*this, board[(nbDecisionVar-1)*row*col+i*row+j] != Nil, IPL_DOM);
->>>>>>> quacode_branch
     }
   }
 
