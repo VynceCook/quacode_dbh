@@ -1,3 +1,4 @@
+#ifdef QUACODE_USE_CUDA
 #include <algorithms/kernels.hh>
 #include <stdio.h>
 #include <unistd.h>
@@ -25,3 +26,5 @@ void foo() {
     CCR(cudaDeviceSynchronize());
     printf("After foo\n");
 }
+
+#endif
