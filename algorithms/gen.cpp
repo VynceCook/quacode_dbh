@@ -33,13 +33,10 @@
 #include <algorithms/kernels.hh>
 #define OSTREAM std::cerr
 
-//#define DEBUG
+// #define DEBUG
 
 #ifdef DEBUG
 #define LOG(__s) {__s}
-#else
-#define LOG(__s) /* void */
-#endif
 
 std::string printComp(TComparisonType cmp) {
     switch (cmp) {
@@ -62,112 +59,9 @@ std::string printComp(TComparisonType cmp) {
 std::string printType(TVarType t) {
     return (t ? "Int" : "Bool");
 }
-
-bool GenAlgo::Constraint::cmpEQ(int lhs, int rhs) {
-    return (lhs == rhs);
-}
-
-bool GenAlgo::Constraint::cmpNQ(int lhs, int rhs) {
-    return (lhs != rhs);
-}
-
-bool GenAlgo::Constraint::cmpGQ(int lhs, int rhs) {
-    return (lhs > rhs);
-}
-
-bool GenAlgo::Constraint::cmpGR(int lhs, int rhs) {
-    return (lhs >= rhs);
-}
-
-bool GenAlgo::Constraint::cmpLQ(int lhs, int rhs) {
-    return (lhs < rhs);
-}
-
-bool GenAlgo::Constraint::cmpLE(int lhs, int rhs) {
-    return (lhs <= rhs);
-}
-
-GenAlgo::Constraint::cmpFuncPtr GenAlgo::Constraint::getCmpPtr(TComparisonType t) {
-    switch (t) {
-        case CMP_NQ:
-            return &GenAlgo::Constraint::cmpNQ;
-        case CMP_EQ:
-            return &GenAlgo::Constraint::cmpEQ;
-        case CMP_LQ:
-            return &GenAlgo::Constraint::cmpLQ;
-        case CMP_LE:
-            return &GenAlgo::Constraint::cmpLE;
-        case CMP_GQ:
-            return &GenAlgo::Constraint::cmpGQ;
-        case CMP_GR:
-            return &GenAlgo::Constraint::cmpGR;
-    }
-
-    return nullptr;
-}
-
-
-GenAlgo::CstrEq::CstrEq(size_t v0, int v2):
-    v0(v0), v2(v2)
-{}
-
-bool GenAlgo::CstrEq::evaluate(const std::vector<int> & c) {
-    return c[v0] == c[v2];
-}
-
-GenAlgo::CstrBool::CstrBool(bool p0, size_t v0, opFuncPtr op, bool p1, size_t v1, cmpFuncPtr cmp, size_t v2):
-    p0(p0), v0(v0), op(op), p1(p1), v1(v1), cmp(cmp), v2(v2)
-{}
-
-bool GenAlgo::CstrBool::evaluate(const std::vector<int> & c) {
-    return cmp(op(p0, c[v0], p1, c[v1]), c[v2]);
-}
-
-bool GenAlgo::CstrBool::opAnd(bool p0, bool v0, bool p1, bool v1) {
-    return (p0 ? v0 : !v0) && (p1 ? v1 : !v1);
-}
-
-bool GenAlgo::CstrBool::opOr(bool p0, bool v0, bool p1, bool v1) {
-    return (p0 ? v0 : !v0) || (p1 ? v1 : !v1);
-}
-
-bool GenAlgo::CstrBool::opImp(bool p0, bool v0, bool p1, bool v1) {
-    return !((p0 ? v0 : !v0) && !(p1 ? v1 : !v1));
-}
-
-bool GenAlgo::CstrBool::opXor(bool p0, bool v0, bool p1, bool v1) {
-    return (!(p0 ? v0 : !v0) != !(p1 ? v1 : !v1));
-}
-
-GenAlgo::CstrPlus::CstrPlus(int n0, size_t v0, int n1, size_t v1, cmpFuncPtr cmp, size_t v2):
-    n0(n0), v0(v0), n1(n1), v1(v1), cmp(cmp), v2(v2)
-{}
-
-bool GenAlgo::CstrPlus::evaluate(const std::vector<int> & c) {
-    return cmp(n0 * c[v0] + n1 * c[v1], v2);
-}
-
-GenAlgo::CstrTimes::CstrTimes(int n, size_t v0, size_t v1, cmpFuncPtr cmp, size_t v2):
-    n(n), v0(v0), v1(v1), cmp(cmp), v2(v2)
-{}
-
-bool GenAlgo::CstrTimes::evaluate(const std::vector<int> & c) {
-    return cmp(n * c[v0] * c[v1], v2);
-}
-
-GenAlgo::CstrLinear::CstrLinear(const std::vector<std::pair<int, size_t>> &poly, cmpFuncPtr cmp, size_t v0):
-    poly(poly), cmp(cmp), v0(v0)
-{}
-
-bool GenAlgo::CstrLinear::evaluate(const std::vector<int> & c) {
-    int sum = 0;
-
-    for (auto it = poly.begin(); it != poly.end(); ++it) {
-        sum += it->first * c[it->second];
-    }
-
-    return cmp(sum, c[v0]);
-}
+#else
+#define LOG(__s) /* void */
+#endif
 
 void GenAlgo::restaureDomaines(int from, int to) {
     for (int i = from + 1; i <= to; ++i) {
@@ -193,20 +87,20 @@ GenAlgo::~GenAlgo() {
 }
 
 void GenAlgo::newVarCreated(int idx, Gecode::TQuantifier q, const std::string& name, TVarType t, int min, int max) {
-    LOG(OSTREAM << "New var " << idx << "/" <<  printType(t) << " : " << name << ", type " << (q == EXISTS ? "E" : "F") << ", dom {" << min << "," << max << "}" <<std::endl);
+    LOG(OSTREAM << "New var " << idx << "/" <<  printType(t) << " : " << name << ", type " << (q == EXISTS ? "E" : "F") << ", dom {" << min << "," << max << "}" <<std::endl;)
     mVars.push_back({idx, q, name, t, min, max, min, max});
     ++mNbVars;
     ++mNbBinderVars;
 }
 
 void GenAlgo::newAuxVarCreated(const std::string& name, TVarType t, int min, int max) {
-    LOG(OSTREAM << "New auxiliary var " << name << "/" << printType(t) << ", dom {" << min << "," << max << "}" << std::endl);
+    LOG(OSTREAM << "New auxiliary var " << name << "/" << printType(t) << ", dom {" << min << "," << max << "}" << std::endl;)
     mVars.push_back({-1, EXISTS, name, t, min, max, min, max});
     ++mNbVars;
 }
 
 void GenAlgo::newChoice(int iVar, int min, int max) {
-    LOG(OSTREAM << "Chef ! We need to explore others choices : " << iVar << " {" << min << "," << max << "}" << std::endl);
+    LOG(OSTREAM << "Chef ! We need to explore others choices : " << iVar << " {" << min << "," << max << "}" << std::endl;)
 
     if (iVar < mLastChoice) {
         restaureDomaines(iVar, mLastChoice);
@@ -235,20 +129,20 @@ void GenAlgo::newPromisingScenario(const TScenario& scenario) {
 }
 
 void GenAlgo::strategyFound() {
-    LOG(OSTREAM << "Chef ! We just found a solution !" << std::endl);
+    LOG(OSTREAM << "Chef ! We just found a solution !" << std::endl;)
 }
 
 void GenAlgo::newFailure() {
-    LOG(OSTREAM << "Another faillure chef !" << std::endl);
+    LOG(OSTREAM << "Another faillure chef !" << std::endl;)
 }
 
 void GenAlgo::globalFailure() {
-    LOG(OSTREAM << "It can't be done. ABORT ! ABORT ! ABORT !" << std::endl);
+    LOG(OSTREAM << "It can't be done. ABORT ! ABORT ! ABORT !" << std::endl;)
 }
 
 /// Function called when a new 'v0 == v2' constraint is posted
 void GenAlgo::postedEq(const std::string& v0, int val) {
-    LOG(OSTREAM << "New constraint Eq " << v0 << "=" << val << std::endl);
+    LOG(OSTREAM << "New constraint Eq " << v0 << "=" << val << std::endl;)
     size_t v0Idx = findVar(v0);
 
     if (v0Idx != (size_t)-1) {
@@ -263,7 +157,7 @@ void GenAlgo::postedEq(const std::string& v0, int val) {
 
 /// Function called when a new 'p0v0 && p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
 void GenAlgo::postedAnd(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
-    LOG(OSTREAM << "New constraint And " << p0 << ":" << v0 << " && " << p1 << ":" << v1 << " " << printComp(cmp) << " " << v2 << std::endl);
+    LOG(OSTREAM << "New constraint And " << p0 << ":" << v0 << " && " << p1 << ":" << v1 << " " << printComp(cmp) << " " << v2 << std::endl;)
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
@@ -278,7 +172,7 @@ void GenAlgo::postedAnd(bool p0, const std::string& v0, bool p1, const std::stri
 
 /// Function called when a new 'p0v0 || p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
 void GenAlgo::postedOr(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
-    LOG(OSTREAM << "New constraint Or " << p0 << ":" << v0 << " || " << p1 << ":" << v1 << " " << printComp(cmp) << " " << v2 << std::endl);
+    LOG(OSTREAM << "New constraint Or " << p0 << ":" << v0 << " || " << p1 << ":" << v1 << " " << printComp(cmp) << " " << v2 << std::endl;)
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
@@ -293,7 +187,7 @@ void GenAlgo::postedOr(bool p0, const std::string& v0, bool p1, const std::strin
 
 /// Function called when a new 'p0v0 >> p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
 void GenAlgo::postedImp(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
-    LOG(OSTREAM << "New constraint Imp " << p0 << ":" << v0 << " >> " << p1 << ":" << v1 << " " << printComp(cmp) << " " << v2 << std::endl);
+    LOG(OSTREAM << "New constraint Imp " << p0 << ":" << v0 << " >> " << p1 << ":" << v1 << " " << printComp(cmp) << " " << v2 << std::endl;)
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
@@ -308,7 +202,7 @@ void GenAlgo::postedImp(bool p0, const std::string& v0, bool p1, const std::stri
 
 /// Function called when a new 'p0v0 ^ p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
 void GenAlgo::postedXOr(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
-    LOG(OSTREAM << "New constraint Xor " << p0 << ":" << v0 << " ^ " << p1 << ":" << v1 << " " << printComp(cmp) << " " << v2 << std::endl);
+    LOG(OSTREAM << "New constraint Xor " << p0 << ":" << v0 << " ^ " << p1 << ":" << v1 << " " << printComp(cmp) << " " << v2 << std::endl;)
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
@@ -324,7 +218,7 @@ void GenAlgo::postedXOr(bool p0, const std::string& v0, bool p1, const std::stri
 
 /// Function called when a new 'n0*v0 + n1*v1 <cmp> v2' constraint is posted
 void GenAlgo::postedPlus(int n0, const std::string& v0, int n1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
-    LOG(OSTREAM << "New constraint Plus " << n0 << "*" << v0 << " + " << n1 << "*" << v1 << " " << printComp(cmp) << " " << v2 << std::endl);
+    LOG(OSTREAM << "New constraint Plus " << n0 << "*" << v0 << " + " << n1 << "*" << v1 << " " << printComp(cmp) << " " << v2 << std::endl;)
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
@@ -339,7 +233,7 @@ void GenAlgo::postedPlus(int n0, const std::string& v0, int n1, const std::strin
 
 /// Function called when a new 'n*v0*v1 <cmp> v2' constraint is posted
 void GenAlgo::postedTimes(int n, const std::string& v0, const std::string& v1, TComparisonType cmp, const std::string& v2) {
-    LOG(OSTREAM << "New constraint Times " << n << "*" << v0 << "*" << v1 << " " << printComp(cmp) << " " << v2 << std::endl);
+    LOG(OSTREAM << "New constraint Times " << n << "*" << v0 << "*" << v1 << " " << printComp(cmp) << " " << v2 << std::endl;)
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
@@ -365,14 +259,16 @@ void GenAlgo::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, 
     size_t v0Idx = findVar(v0);
 
     if (v0Idx != (size_t)-1) {
-        Constraint * tmp = new CstrLinear({}, Constraint::getCmpPtr(cmp), v0Idx);
+        size_t * polyCpy = new size_t[poly.size() * 2];
+        Constraint * tmp = new CstrLinear(polyCpy, poly.size(), Constraint::getCmpPtr(cmp), v0Idx);
         mCstrs.push_back(tmp);
 
         for (auto it = poly.begin(); it != poly.end(); ++it) {
             size_t viIdx = findVar(it->varName);
 
             if (viIdx != (size_t)-1) {
-                dynamic_cast<CstrLinear*>(tmp)->poly.push_back(std::make_pair(it->coeff, viIdx));
+                *polyCpy++ = it->coeff;
+                *polyCpy++ = viIdx;
             }
             else {
                 OSTREAM << "Can't find " << it->varName << std::endl;
@@ -389,7 +285,7 @@ void GenAlgo::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, 
 
 
 void GenAlgo::parallelTask() {
-    LOG(OSTREAM << "THREAD start" << std::endl);
+    LOG(OSTREAM << "THREAD start" << std::endl;)
 
     OSTREAM << "Calling foo kernel" << std::endl;
     foo();
@@ -404,7 +300,7 @@ void GenAlgo::parallelTask() {
 
 
     mDestructor.release();
-    LOG(OSTREAM << "THREAD stop" << std::endl);
+    LOG(OSTREAM << "THREAD stop" << std::endl;)
 }
 
 
@@ -417,7 +313,7 @@ size_t GenAlgo::findVar(const std::string & name) {
 
 bool GenAlgo::evaluate(const std::vector<int> &vars) {
     for (auto it = mCstrs.begin(); it != mCstrs.end(); ++it) {
-        if (!(*it)->evaluate(vars)) return false;
+        if (!(*it)->evaluate(vars.data())) return false;
     }
 
     return true;
