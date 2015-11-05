@@ -1,7 +1,8 @@
 #ifdef QUACODE_USE_CUDA
-#include <algorithms/kernels.hh>
 #include <stdio.h>
 #include <unistd.h>
+
+#include <algorithms/kernels.hh>
 
 /**
  * This macro checks return value of the CUDA runtime call and exits
@@ -16,6 +17,8 @@
 	} }
 
 __global__ void fooKernel() {
+    CstrEq c(2, 1);
+
     printf("Foo on GPU.\n");
 }
 

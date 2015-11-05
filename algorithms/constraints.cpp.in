@@ -1,0 +1,112 @@
+#include <algorithms/constraints.hh>
+
+CUDA_HOST CUDA_DEVICE bool Constraint::cmpEQ(int lhs, int rhs) {
+    return (lhs == rhs);
+}
+
+CUDA_HOST CUDA_DEVICE bool Constraint::cmpNQ(int lhs, int rhs) {
+    return (lhs != rhs);
+}
+
+CUDA_HOST CUDA_DEVICE bool Constraint::cmpGQ(int lhs, int rhs) {
+    return (lhs > rhs);
+}
+
+CUDA_HOST CUDA_DEVICE bool Constraint::cmpGR(int lhs, int rhs) {
+    return (lhs >= rhs);
+}
+
+CUDA_HOST CUDA_DEVICE bool Constraint::cmpLQ(int lhs, int rhs) {
+    return (lhs < rhs);
+}
+
+CUDA_HOST CUDA_DEVICE bool Constraint::cmpLE(int lhs, int rhs) {
+    return (lhs <= rhs);
+}
+
+CUDA_HOST CUDA_DEVICE Constraint::cmpFuncPtr Constraint::getCmpPtr(TComparisonType t) {
+    switch (t) {
+        case CMP_NQ:
+            return &Constraint::cmpNQ;
+        case CMP_EQ:
+            return &Constraint::cmpEQ;
+        case CMP_LQ:
+            return &Constraint::cmpLQ;
+        case CMP_LE:
+            return &Constraint::cmpLE;
+        case CMP_GQ:
+            return &Constraint::cmpGQ;
+        case CMP_GR:
+            return &Constraint::cmpGR;
+    }
+
+    return nullptr;
+}
+
+
+CUDA_HOST CUDA_DEVICE CstrEq::CstrEq(size_t v0, int v2):
+    v0(v0), v2(v2)
+{}
+
+CUDA_HOST CUDA_DEVICE bool CstrEq::evaluate(const int * c) {
+    return c[v0] == c[v2];
+}
+
+CUDA_HOST CUDA_DEVICE CstrBool::CstrBool(bool p0, size_t v0, opFuncPtr op, bool p1, size_t v1, cmpFuncPtr cmp, size_t v2):
+    p0(p0), v0(v0), op(op), p1(p1), v1(v1), cmp(cmp), v2(v2)
+{}
+
+CUDA_HOST CUDA_DEVICE bool CstrBool::evaluate(const int * c) {
+    return cmp(op(p0, c[v0], p1, c[v1]), c[v2]);
+}
+
+CUDA_HOST CUDA_DEVICE bool CstrBool::opAnd(bool p0, bool v0, bool p1, bool v1) {
+    return (p0 ? v0 : !v0) && (p1 ? v1 : !v1);
+}
+
+CUDA_HOST CUDA_DEVICE bool CstrBool::opOr(bool p0, bool v0, bool p1, bool v1) {
+    return (p0 ? v0 : !v0) || (p1 ? v1 : !v1);
+}
+
+CUDA_HOST CUDA_DEVICE bool CstrBool::opImp(bool p0, bool v0, bool p1, bool v1) {
+    return !((p0 ? v0 : !v0) && !(p1 ? v1 : !v1));
+}
+
+CUDA_HOST CUDA_DEVICE bool CstrBool::opXor(bool p0, bool v0, bool p1, bool v1) {
+    return (!(p0 ? v0 : !v0) != !(p1 ? v1 : !v1));
+}
+
+CUDA_HOST CUDA_DEVICE CstrPlus::CstrPlus(int n0, size_t v0, int n1, size_t v1, cmpFuncPtr cmp, size_t v2):
+    n0(n0), v0(v0), n1(n1), v1(v1), cmp(cmp), v2(v2)
+{}
+
+CUDA_HOST CUDA_DEVICE bool CstrPlus::evaluate(const int * c) {
+    return cmp(n0 * c[v0] + n1 * c[v1], v2);
+}
+
+CUDA_HOST CUDA_DEVICE CstrTimes::CstrTimes(int n, size_t v0, size_t v1, cmpFuncPtr cmp, size_t v2):
+    n(n), v0(v0), v1(v1), cmp(cmp), v2(v2)
+{}
+
+CUDA_HOST CUDA_DEVICE bool CstrTimes::evaluate(const int * c) {
+    return cmp(n * c[v0] * c[v1], v2);
+}
+
+CUDA_HOST CUDA_DEVICE CstrLinear::~CstrLinear() {
+    delete poly;
+}
+
+CUDA_HOST CUDA_DEVICE CstrLinear::CstrLinear(const size_t * poly, size_t polySize, cmpFuncPtr cmp, size_t v0):
+    poly(poly), polySize(polySize), cmp(cmp), v0(v0)
+{
+}
+
+CUDA_HOST CUDA_DEVICE bool CstrLinear::evaluate(const int * c) {
+    int sum = 0;
+
+    for (size_t i = 0; i < polySize; ++i) {
+        sum += poly[2 * i] * c[poly[2 * i + 1]];
+    }
+
+    return cmp(sum, c[v0]);
+}

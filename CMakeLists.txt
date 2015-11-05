@@ -106,6 +106,7 @@ IF(QUACODE_USE_CUDA)
     IF(NOT CUDA_FOUND)
         MESSAGE(FATAL_ERROR "Cuda library are needed.")
     ENDIF()
+    SET(CUDA_SEPARABLE_COMPILATION On)
     SET(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-gencode arch=compute_50,code=sm_50)
     ADD_DEFINITIONS(-DQUACODE_USE_CUDA)
 ENDIF()
@@ -146,6 +147,25 @@ IF (LOG_AUDIT)
   ADD_DEFINITIONS(-DLOG_AUDIT)
 ENDIF()
 
+FILE(
+    REMOVE
+    algorithms/constraints.cpp
+    algorithms/constraints.cu
+)
+
+IF(QUACODE_USE_CUDA)
+    CONFIGURE_FILE(
+        algorithms/constraints.cpp.in
+        algorithms/constraints.cu
+    )
+ELSE(QUACODE_USE_CUDA)
+    CONFIGURE_FILE(
+        algorithms/constraints.cpp.in
+        algorithms/constraints.cpp
+    )
+
+ENDIF()
+
 FILE(GLOB ALGORITHMS_HEADERS algorithms/*.hh)
 FILE(GLOB ALGORITHMS_HPP algorithms/*.hpp)
 FILE(GLOB ALGORITHMS_SRCS algorithms/*.cpp)
@@ -158,13 +178,13 @@ SET(ALGORITHMS_SRCS
 )
 SET(CALLBACK_EXAMPLES_SRCS
     examples/baker.cpp
-    examples/nim-fibo.cpp
-    examples/rndQCSP.cpp
-    examples/qbf.cpp
-    examples/connect-four.cpp
-    examples/qdimacs.cpp
-    examples/matrix-game.cpp
-    examples/speeddating.cpp
+    # examples/nim-fibo.cpp
+    # examples/rndQCSP.cpp
+    # examples/qbf.cpp
+    # examples/connect-four.cpp
+    # examples/qdimacs.cpp
+    # examples/matrix-game.cpp
+    # examples/speeddating.cpp
 )
 
 SOURCE_GROUP("Hpp Files" REGULAR_EXPRESSION ".hpp")
