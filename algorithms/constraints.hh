@@ -3,6 +3,7 @@
 
 #include <quacode/asyncalgotypes.hh>
 #include <algorithms/kernels.hh>
+#include <cstddef>
 
 struct Constraint {
     typedef bool (*cmpFuncPtr)(int, int);
