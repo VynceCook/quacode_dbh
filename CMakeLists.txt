@@ -163,7 +163,6 @@ ELSE(QUACODE_USE_CUDA)
         algorithms/constraints.cpp.in
         algorithms/constraints.cpp
     )
-
 ENDIF()
 
 FILE(GLOB ALGORITHMS_HEADERS algorithms/*.hh)
