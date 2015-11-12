@@ -30,8 +30,11 @@
 #ifndef __GEN_H__
 #define __GEN_H__
 
+#ifdef QUACODE_USE_CUDA
+
 #include <quacode/asyncalgo.hh>
-#include <algorithms/constraints.hh>
+#include <algorithms/export.hh>
+#include <cuda/constraints.hh>
 
 class GenAlgo : public AsyncAlgo {
     /// Variables of the problem
@@ -65,54 +68,54 @@ class GenAlgo : public AsyncAlgo {
 
 public:
     /// Main constructor
-    GenAlgo();
+    ALGORITHM_EXPORT GenAlgo();
 
     /// Function called when a new variable \a var named \a name
     /// is created at position \a idx in the binder.
     /// \a t is the type of the variable, and
     /// \a min and \a max are the lower and upper bounds of the domain
-    virtual void newVarCreated(int idx, Gecode::TQuantifier q, const std::string& name, TVarType t, int min, int max);
+    ALGORITHM_EXPORT virtual void newVarCreated(int idx, Gecode::TQuantifier q, const std::string& name, TVarType t, int min, int max);
     /// Function called when a new auxiliary  variable \a var named \a name
     /// is created. \a t is the type of the variable, and
     /// \a min and \a max are the lower and upper bounds of the domain
-    virtual void newAuxVarCreated(const std::string& name, TVarType t, int min, int max);
+    ALGORITHM_EXPORT virtual void newAuxVarCreated(const std::string& name, TVarType t, int min, int max);
 
     /// Function called when a new choice (\a iVar = variable index in the binder,
     /// \a min and \a max are the lower and upper bounds of the value) during search
-    virtual void newChoice(int iVar, int min, int max);
+    ALGORITHM_EXPORT virtual void newChoice(int iVar, int min, int max);
     /// Function called when a new promising scenario is discovered during search
-    virtual void newPromisingScenario(const TScenario& instance);
+    ALGORITHM_EXPORT virtual void newPromisingScenario(const TScenario& instance);
     /// Function called when the search ends with a successfull strategy
-    virtual void strategyFound();
+    ALGORITHM_EXPORT virtual void strategyFound();
     /// Function called when a failure occured during search
-    virtual void newFailure();
+    ALGORITHM_EXPORT virtual void newFailure();
     /// Function called when the search ends with a global failure, problem unfeasible
-    virtual void globalFailure();
+    ALGORITHM_EXPORT virtual void globalFailure();
 
     /// Function called when a new 'v0 == v2' constraint is posted
-    virtual void postedEq(const std::string& v0, int val);
+    ALGORITHM_EXPORT virtual void postedEq(const std::string& v0, int val);
 
     /// Function called when a new 'p0v0 && p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
-    virtual void postedAnd(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2);
+    ALGORITHM_EXPORT virtual void postedAnd(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2);
     /// Function called when a new 'p0v0 || p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
-    virtual void postedOr(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2);
+    ALGORITHM_EXPORT virtual void postedOr(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2);
     /// Function called when a new 'p0v0 >> p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
-    virtual void postedImp(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2);
+    ALGORITHM_EXPORT virtual void postedImp(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2);
     /// Function called when a new 'p0v0 ^ p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
-    virtual void postedXOr(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2);
+    ALGORITHM_EXPORT virtual void postedXOr(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2);
 
     /// Function called when a new 'n0*v0 + n1*v1 <cmp> v2' constraint is posted
-    virtual void postedPlus(int n0, const std::string& v0, int n1, const std::string& v1, TComparisonType cmp, const std::string& v2);
+    ALGORITHM_EXPORT virtual void postedPlus(int n0, const std::string& v0, int n1, const std::string& v1, TComparisonType cmp, const std::string& v2);
     /// Function called when a new 'n*v0*v1 <cmp> v2' constraint is posted
-    virtual void postedTimes(int n, const std::string& v0, const std::string& v1, TComparisonType cmp, const std::string& v2);
+    ALGORITHM_EXPORT virtual void postedTimes(int n, const std::string& v0, const std::string& v1, TComparisonType cmp, const std::string& v2);
     /// Function called when a new 'SUM_i n_i*v_i <cmp> v0' constraint is posted
-    virtual void postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, const std::string& v0);
+    ALGORITHM_EXPORT virtual void postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, const std::string& v0);
 
     /// Function executed when the thread starts
-    virtual void parallelTask(void);
+    ALGORITHM_EXPORT virtual void parallelTask(void);
 
     // Main destructor
-    virtual ~GenAlgo();
+    ALGORITHM_EXPORT virtual ~GenAlgo();
 
 private:
     size_t      findVar(const std::string & name);
@@ -129,4 +132,5 @@ private:
 	float       randFloat(float max);
 };
 
+#endif
 #endif

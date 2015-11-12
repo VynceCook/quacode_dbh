@@ -26,11 +26,11 @@
  *  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
-
+#ifdef QUACODE_USE_CUDA
 #include <cstdlib>
 #include <ctime>
 #include <algorithms/gen.hh>
-#include <algorithms/kernels.hh>
+#include <cuda/kernels.hh>
 #define OSTREAM std::cerr
 #define MAX_VARS_IN_INTERVAL 24
 #define MUTATION_THRESHOLD 1.0
@@ -340,7 +340,7 @@ std::vector<int *> GenAlgo::generateAll() {
 		res.push_back(newArray);
 	}
 
-	// "Increases" the candidate 
+	// "Increases" the candidate
 	while (1) {
 		for (i=0; cur[i] == mVars[i].dom.max && i < mNbVars; ++i) {
 			cur[i] = mVars[i].dom.min;
@@ -397,7 +397,7 @@ void GenAlgo::execute(const int maxGen, const int popSize) {
 
 	// Candidates generation
 	generateRandomPop(popSize, curGen);
-	
+
 	// for n gen
 	for (int nGen=0; nGen<maxGen; ++nGen){
 		prevRange = 0;
@@ -424,7 +424,7 @@ void GenAlgo::execute(const int maxGen, const int popSize) {
 				mutate(nextGen, i);
 			}
 		}
-		
+
 		curGen = nextGen;
 	}
 
@@ -514,3 +514,5 @@ void GenAlgo::mutate(Interval ** population, int p){
 float GenAlgo::randFloat(float max){
 	return((float)rand()/(float)(RAND_MAX/max));
 }
+
+#endif

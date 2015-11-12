@@ -3,9 +3,9 @@
 #include <unistd.h>
 #include <assert.h>
 
-#include <algorithms/kernels.hh>
-#include <algorithms/constraints.hh>
-#include <algorithms/cuda.hh>
+#include <cuda/kernels.hh>
+#include <cuda/constraints.hh>
+#include <cuda/cuda.hh>
 
 __device__ Constraint* dCstrs[512];
 __device__ size_t      dNbCstrs;

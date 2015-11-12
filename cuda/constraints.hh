@@ -2,7 +2,7 @@
 #define __CONSTRAINTS_H_
 
 #include <quacode/asyncalgotypes.hh>
-#include <algorithms/cuda.hh>
+#include <cuda/cuda.hh>
 #include <cstddef>
 
 typedef     int     TOperatorType;
