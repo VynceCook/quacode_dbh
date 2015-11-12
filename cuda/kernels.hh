@@ -1,8 +1,8 @@
 #ifndef __KERNELS_H_
 #define __KERNELS_H_
 
-#include <algorithms/constraints.hh>
-#include <algorithms/cuda.hh>
+#include <cuda/constraints.hh>
+#include <cuda/cuda.hh>
 
 #ifdef __CUDACC__
 CUDA_GLOBAL void CstrEqKernel(CstrEq **, size_t v0, int v2);

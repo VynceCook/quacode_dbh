@@ -78,6 +78,8 @@ IF(UNIX)
     SET(BUILD_SHARED_LIBS OFF)
     # To know in source file that we compil static
     ADD_DEFINITIONS(-DQUACODE_STATIC_LIBS)
+    ADD_DEFINITIONS(-DALGORITHM_STATIC_LIB)
+    ADD_DEFINITIONS(-DCUDA_STATIC_LIB)
     # When STATIC_LINKING is TRUE, than cmake looks for libraries ending
     # with .a. This is for linux only!
     SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
@@ -107,7 +109,7 @@ IF(QUACODE_USE_CUDA)
         MESSAGE(FATAL_ERROR "Cuda library are needed.")
     ENDIF()
     SET(CUDA_SEPARABLE_COMPILATION On)
-    SET(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS})
+    SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};--compiler-options;-fPIC")
     ADD_DEFINITIONS(-DQUACODE_USE_CUDA)
 ENDIF()
 
@@ -137,9 +139,11 @@ IF (CMAKE_COMPILER_IS_GNUCXX)
   SET(CMAKE_CXX_FLAGS_DEBUG "-ggdb")
 ENDIF ()
 
+INCLUDE(CheckCXXCompilerFlag)
 check_cxx_compiler_flag(-fvisibility=hidden HAVE_VISIBILITY_HIDDEN_FLAG)
 IF (HAVE_VISIBILITY_HIDDEN_FLAG)
-  SET(GECODE_GCC_HAS_CLASS_VISIBILITY "/**/")
+  ADD_DEFINITIONS(-DALGORITHM_GCC_HAS_CLASS_VISIBILITY)
+  ADD_DEFINITIONS(-DCUDA_GCC_HAS_CLASS_VISIBILITY)
   ADD_DEFINITIONS(-fvisibility=hidden)
 ENDIF()
 
@@ -147,43 +151,32 @@ IF (LOG_AUDIT)
   ADD_DEFINITIONS(-DLOG_AUDIT)
 ENDIF()
 
-FILE(
-    REMOVE
-    algorithms/constraints.cpp
-    algorithms/constraints.cu
-)
-
 IF(QUACODE_USE_CUDA)
-    CONFIGURE_FILE(
-        algorithms/constraints.cpp.in
-        algorithms/constraints.cu
-    )
-ELSE(QUACODE_USE_CUDA)
-    CONFIGURE_FILE(
-        algorithms/constraints.cpp.in
-        algorithms/constraints.cpp
-    )
+    FILE(GLOB CUDA_SRCS cuda/*.cu)
+    FILE(GLOB CUDA_HEADERS cuda/*.hh)
+    FILE(GLOB CUDA_HPP cuda/*.hpp)
+
+    CUDA_ADD_LIBRARY(quacodecuda ${CUDA_SRCS} ${CUDA_HPP} ${CUDA_HEADERS} SHARED)
+    SET_TARGET_PROPERTIES(quacodecuda PROPERTIES COMPILE_DEFINITIONS "BUILD_CUDA_LIB")
+    SET(QUACODE_CUDA_LIB quacodecuda)
 ENDIF()
 
 FILE(GLOB ALGORITHMS_HEADERS algorithms/*.hh)
 FILE(GLOB ALGORITHMS_HPP algorithms/*.hpp)
 FILE(GLOB ALGORITHMS_SRCS algorithms/*.cpp)
-IF(QUACODE_USE_CUDA)
-    FILE(GLOB ALGORITHMS_CUDA_SRCS algorithms/*.cu)
-ENDIF()
 SET(ALGORITHMS_SRCS
     ${ALGORITHMS_SRCS}
     quacode/quacode/asyncalgo/asyncalgo.cpp
 )
 SET(CALLBACK_EXAMPLES_SRCS
     examples/baker.cpp
-    # examples/nim-fibo.cpp
-    # examples/rndQCSP.cpp
-    # examples/qbf.cpp
-    # examples/connect-four.cpp
-    # examples/qdimacs.cpp
-    # examples/matrix-game.cpp
-    # examples/speeddating.cpp
+    examples/nim-fibo.cpp
+    examples/rndQCSP.cpp
+    examples/qbf.cpp
+    examples/connect-four.cpp
+    examples/qdimacs.cpp
+    examples/matrix-game.cpp
+    examples/speeddating.cpp
 )
 
 SOURCE_GROUP("Hpp Files" REGULAR_EXPRESSION ".hpp")
@@ -191,16 +184,16 @@ SOURCE_GROUP("Hpp Files" REGULAR_EXPRESSION ".hpp")
 SET_SOURCE_FILES_PROPERTIES(${ALL_HEADERS} PROPERTIES HEADER_FILE_ONLY TRUE)
 SET_SOURCE_FILES_PROPERTIES(${ALL_HPP} PROPERTIES HEADER_FILE_ONLY TRUE)
 
+ADD_LIBRARY(quacodealgorithms SHARED ${ALGORITHMS_SRCS} ${ALGORITHMS_HPP} ${ALGORITHMS_HEADERS})
+TARGET_LINK_LIBRARIES(quacodealgorithms ${QUACODE_LIBRARIES} ${GECODE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+SET_TARGET_PROPERTIES(quacodealgorithms PROPERTIES COMPILE_DEFINITIONS "BUILD_ALGORITHM_LIB")
+SET(QUACODE_ALGORITHMS_LIB quacodealgorithms)
 
 # Add targets for examples
 FOREACH (example ${CALLBACK_EXAMPLES_SRCS})
   GET_FILENAME_COMPONENT(exampleBin ${example} NAME_WE)
-  IF(QUACODE_USE_CUDA)
-      CUDA_ADD_EXECUTABLE(${exampleBin} ${ALGORITHMS_CUDA_SRCS} ${ALGORITHMS_CUDA_OBJS} ${ALGORITHMS_SRCS} ${ALGORITHMS_HEADERS} ${ALGORITHMS_HPP} ${example})
-  ELSE(QUACODE_USE_CUDA)
-      ADD_EXECUTABLE(${exampleBin} ${ALGORITHMS_SRCS} ${ALGORITHMS_HEADERS} ${ALGORITHMS_HPP} ${example})
-  ENDIF()
-  TARGET_LINK_LIBRARIES(${exampleBin} ${QUACODE_LIBRARIES} ${GECODE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+  ADD_EXECUTABLE(${exampleBin} ${example})
+  TARGET_LINK_LIBRARIES(${exampleBin} ${QUACODE_LIBRARIES} ${GECODE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${QUACODE_ALGORITHMS_LIB} ${QUACODE_CUDA_LIB})
 
   # set -static, when STATIC_LINKING is TRUE and set LINK_SEARCH_END_STATIC
   # to remove the additional -bdynamic from the linker line.
