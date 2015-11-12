@@ -117,8 +117,16 @@ public:
 private:
     size_t      findVar(const std::string & name);
     bool        evaluate(const std::vector<int> & vars);
+	/*
 	std::vector<std::vector<int>> generateAll();
-	std::vector<std::vector<int>> generateRandom(const int n);
+	std::vector<std:::vector<int>> generateRandom(const int n);
+	*/
+	void        execute(const int maxGen, const int popSize);
+	void        generateRandomPop(const int size, Interval ** population);
+	float       evaluateIntervals(const Interval * interVars);
+	void        crossover(Interval ** parents, Interval ** children, int p1, int p2, int c);
+	void        mutate(Interval ** population, int p);
+	float       randFloat(float max);
 };
 
 #endif
