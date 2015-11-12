@@ -80,9 +80,11 @@ GenAlgo::GenAlgo() : AsyncAlgo() {
 GenAlgo::~GenAlgo() {
     mbQuacodeThreadFinished = true;
 
+#ifndef QUACODE_USE_CUDA
     for (auto it = mCstrs.begin(); it != mCstrs.end(); ++it) {
         delete *it;
     }
+#endif
 
     mDestructor.acquire();
     mDestructor.release();
@@ -148,7 +150,7 @@ void GenAlgo::postedEq(const std::string& v0, int val) {
     size_t v0Idx = findVar(v0);
 
     if (v0Idx != (size_t)-1) {
-        Constraint * tmp = new CstrEq(v0Idx, val);
+        Constraint * tmp = CstrEq::create(v0Idx, val);
         mCstrs.push_back(tmp);
     }
     else {
@@ -163,7 +165,7 @@ void GenAlgo::postedAnd(bool p0, const std::string& v0, bool p1, const std::stri
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
-        Constraint * tmp = new CstrBool(p0, v0Idx, &CstrBool::opAnd, p1, v1Idx, Constraint::getCmpPtr(cmp), v2Idx);
+        Constraint * tmp = CstrBool::create(p0, v0Idx, OP_AND, p1, v1Idx, cmp, v2Idx);
         mCstrs.push_back(tmp);
     }
     else {
@@ -178,7 +180,7 @@ void GenAlgo::postedOr(bool p0, const std::string& v0, bool p1, const std::strin
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
-        Constraint * tmp = new CstrBool(p0, v0Idx, &CstrBool::opOr, p1, v1Idx, Constraint::getCmpPtr(cmp), v2Idx);
+        Constraint * tmp = CstrBool::create(p0, v0Idx, OP_OR, p1, v1Idx, cmp, v2Idx);
         mCstrs.push_back(tmp);
     }
     else {
@@ -193,7 +195,7 @@ void GenAlgo::postedImp(bool p0, const std::string& v0, bool p1, const std::stri
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
-        Constraint * tmp = new CstrBool(p0, v0Idx, &CstrBool::opImp, p1, v1Idx, Constraint::getCmpPtr(cmp), v2Idx);
+        Constraint * tmp = CstrBool::create(p0, v0Idx, OP_IMP, p1, v1Idx, cmp, v2Idx);
         mCstrs.push_back(tmp);
     }
     else {
@@ -208,7 +210,7 @@ void GenAlgo::postedXOr(bool p0, const std::string& v0, bool p1, const std::stri
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
-        Constraint * tmp = new CstrBool(p0, v0Idx, &CstrBool::opXor, p1, v1Idx, Constraint::getCmpPtr(cmp), v2Idx);
+        Constraint * tmp = CstrBool::create(p0, v0Idx, OP_XOR, p1, v1Idx, cmp, v2Idx);
         mCstrs.push_back(tmp);
     }
     else {
@@ -224,7 +226,7 @@ void GenAlgo::postedPlus(int n0, const std::string& v0, int n1, const std::strin
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
-        Constraint * tmp = new CstrPlus(n0, v0Idx, n1, v1Idx, Constraint::getCmpPtr(cmp), v2Idx);
+        Constraint * tmp = CstrPlus::create(n0, v0Idx, n1, v1Idx, cmp, v2Idx);
         mCstrs.push_back(tmp);
     }
     else {
@@ -239,7 +241,7 @@ void GenAlgo::postedTimes(int n, const std::string& v0, const std::string& v1, T
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
-        Constraint * tmp = new CstrTimes(n, v0Idx, v1Idx, Constraint::getCmpPtr(cmp), v2Idx);
+        Constraint * tmp = CstrTimes::create(n, v0Idx, v1Idx, cmp, v2Idx);
         mCstrs.push_back(tmp);
     }
     else {
@@ -261,9 +263,7 @@ void GenAlgo::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, 
     size_t v0Idx = findVar(v0);
 
     if (v0Idx != (size_t)-1) {
-        size_t * polyCpy = new size_t[poly.size() * 2];
-        Constraint * tmp = new CstrLinear(polyCpy, poly.size(), Constraint::getCmpPtr(cmp), v0Idx);
-        mCstrs.push_back(tmp);
+        size_t * polyCpy = new size_t[poly.size() * 2], * polyCpy2 = polyCpy;
 
         for (auto it = poly.begin(); it != poly.end(); ++it) {
             size_t viIdx = findVar(it->varName);
@@ -277,7 +277,9 @@ void GenAlgo::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, 
                 GECODE_NEVER
             }
         }
-
+        Constraint * tmp = CstrLinear::create(polyCpy2, poly.size(), cmp, v0Idx);
+        mCstrs.push_back(tmp);
+        delete[] polyCpy2;
     }
     else {
         OSTREAM << "Can't find variable " << v0 << std::endl;
@@ -307,18 +309,17 @@ void GenAlgo::parallelTask() {
 
 
 size_t GenAlgo::findVar(const std::string & name) {
-    for (size_t i = 0; i < mVars.size(); ++i)
-        if (mVars[i].name == name) return i;
+    for (size_t i = 0; i < mVars.size(); ++i) {
+        if (mVars[i].name == name) {
+            return i;
+        }
+    }
 
     return -1;
 }
 
 bool GenAlgo::evaluate(const std::vector<int> &vars) {
-    for (auto it = mCstrs.begin(); it != mCstrs.end(); ++it) {
-        if (!(*it)->evaluate(vars.data())) return false;
-    }
-
-    return true;
+    return Constraint::evaluate(mCstrs.data(), mCstrs.size(), vars.data());
 }
 
 /*

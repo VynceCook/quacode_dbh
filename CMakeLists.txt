@@ -107,7 +107,7 @@ IF(QUACODE_USE_CUDA)
         MESSAGE(FATAL_ERROR "Cuda library are needed.")
     ENDIF()
     SET(CUDA_SEPARABLE_COMPILATION On)
-    SET(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-gencode arch=compute_50,code=sm_50)
+    SET(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS})
     ADD_DEFINITIONS(-DQUACODE_USE_CUDA)
 ENDIF()
 
@@ -163,7 +163,6 @@ ELSE(QUACODE_USE_CUDA)
         algorithms/constraints.cpp.in
         algorithms/constraints.cpp
     )
-
 ENDIF()
 
 FILE(GLOB ALGORITHMS_HEADERS algorithms/*.hh)
