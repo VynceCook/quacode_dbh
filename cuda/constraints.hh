@@ -4,109 +4,80 @@
 #include <quacode/asyncalgotypes.hh>
 #include <cuda/cuda.hh>
 #include <cstddef>
+#include <stdint.h>
 
-typedef     int     TOperatorType;
-#define     OP_AND 0
-#define     OP_OR  1
-#define     OP_IMP 2
-#define     OP_XOR 3
-
-struct Constraint {
-    typedef bool (*cmpFuncPtr)(int, int);
-    typedef bool (*opFuncPtr)(bool, bool, bool, bool);
-
-    CUDA_HOST   virtual ~Constraint() {};
-    CUDA_DEVICE virtual bool evaluate(const int * c) = 0;
-
-    CUDA_DEVICE static bool cmpEQ(int, int);
-    CUDA_DEVICE static bool cmpNQ(int, int);
-    CUDA_DEVICE static bool cmpGQ(int, int);
-    CUDA_DEVICE static bool cmpGR(int, int);
-    CUDA_DEVICE static bool cmpLQ(int, int);
-    CUDA_DEVICE static bool cmpLE(int, int);
-    CUDA_DEVICE static cmpFuncPtr getCmpPtr(TComparisonType);
-    CUDA_HOST   static bool evaluate(Constraint **, size_t, const int *);
-    CUDA_DEVICE virtual void describe();
+typedef bool (*cstrFuncPtr)(uintptr_t *, int *);
 
 
-};
+#define opAnd(__p0, __v0, __p1, __v1)                                           \
+            (((__p0) ? (__v0) : !(__v0)) && ((__p1) ? (__v1) : !(__v1)))
+#define opOr (__p0, __v0, __p1, __v1)                                           \
+            (((__p0) ? (__v0) : !(__v0)) || ((__p1) ? (__v1) : !(__v1)))
+#define opImp(__p0, __v0, __p1, __v1)                                           \
+            (!(((__p0) ? (__v0) : !(__v0)) && !((__p1) ? (__v1) : !(__v1))))
+#define opXor(__p0, __v0, __p1, __v1)                                           \
+            (!((__p0) ? (__v0) : !(__v0)) != !((__p1) ? (__v1) : !(__v1)))
+#define opPlus(__n0, __v0, __n1, __v1)                                          \
+            ((__n0) * (__v0) + (__n1) * (__v1))
+#define opTimes(__n, __v0, __v1)                                                \
+            ((__n0) * (__v0) * (__v1))
+#define opLinear(__v, __size, __sum)                                            \
+            do {
+                for (int i = 0; i < __size; i += 2) {
+                    __sum += __v[i] * __v[i + 1];
+                }
+            } while(0)
 
-// v0 == v1
-struct CstrEq: Constraint {
-    size_t v0;
-    int v2;
 
-    CUDA_DEVICE virtual bool evaluate(const int *);
-    CUDA_DEVICE virtual void describe();
+CUDA_DEVICE bool cstrEq(uintptr_t * data, int * c);
 
-    CUDA_HOST  static CstrEq * create(size_t v0, int v2);
-    CUDA_HOST CUDA_DEVICE CstrEq(size_t v0, int v2);
-};
+CUDA_DEVICE bool cstrAndEQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrAndNQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrAndGQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrAndGR(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrAndLQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrAndLE(uintptr_t * data, int * c);
 
-// p0v0 op p1v1 cmp v2
-struct CstrBool: Constraint {
-    bool        p0;
-    size_t      v0;
-    opFuncPtr   op;
-    bool        p1;
-    size_t      v1;
-    cmpFuncPtr  cmp;
-    size_t      v2;
+CUDA_DEVICE bool cstrOrEQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrOrNQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrOrGQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrOrGR(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrOrLQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrOrLE(uintptr_t * data, int * c);
 
-    CUDA_DEVICE static  opFuncPtr getOpPtr(TOperatorType op);
+CUDA_DEVICE bool cstrImpEQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrImpNQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrImpGQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrImpGR(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrImpLQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrImpLE(uintptr_t * data, int * c);
 
-    CUDA_DEVICE virtual bool evaluate(const int *);
-    CUDA_DEVICE virtual void describe();
+CUDA_DEVICE bool cstrXorEQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrXorNQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrXorGQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrXorGR(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrXorLQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrXorLE(uintptr_t * data, int * c);
 
-    CUDA_DEVICE static bool opAnd(bool, bool, bool, bool);
-    CUDA_DEVICE static bool opOr(bool, bool, bool, bool);
-    CUDA_DEVICE static bool opImp(bool, bool, bool, bool);
-    CUDA_DEVICE static bool opXor(bool, bool, bool, bool);
+CUDA_DEVICE bool cstrPlusEQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrPlusNQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrPlusGQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrPlusGR(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrPlusLQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrPlusLE(uintptr_t * data, int * c);
 
-    CUDA_HOST   static CstrBool * create(bool p0, size_t v0, TOperatorType op, bool p1, size_t v1, TComparisonType cmp, size_t v2);
-    CUDA_HOST CUDA_DEVICE CstrBool(bool p0, size_t v0, opFuncPtr op, bool p1, size_t v1, cmpFuncPtr cmp, size_t v2);
-};
+CUDA_DEVICE bool cstrTimesEQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrTimesNQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrTimesGQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrTimesGR(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrTimesLQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrTimesLE(uintptr_t * data, int * c);
 
-// n0*v0 + n1*v1 cmp v2
-struct CstrPlus: Constraint {
-    int n0;
-    size_t v0;
-    int n1;
-    size_t v1;
-    cmpFuncPtr cmp;
-    size_t v2;
-
-    CUDA_DEVICE virtual bool evaluate(const int *);
-    CUDA_DEVICE virtual void describe();
-    CUDA_HOST   static CstrPlus* create(int n0, size_t v0, int n1, size_t v1, TComparisonType cmp, size_t v2);
-    CUDA_HOST CUDA_DEVICE CstrPlus(int n0, size_t v0, int n1, size_t v1, cmpFuncPtr cmp, size_t v2);
-};
-
-// n*v0*v1 cmp v2
-struct CstrTimes: Constraint {
-    int n;
-    size_t v0;
-    size_t v1;
-    cmpFuncPtr cmp;
-    size_t v2;
-
-    CUDA_DEVICE virtual bool evaluate(const int *);
-    CUDA_DEVICE virtual void describe();
-    CUDA_HOST   static CstrTimes * create(int n, size_t v0, size_t v1, TComparisonType cmp, size_t v2);
-    CUDA_HOST CUDA_DEVICE CstrTimes(int n, size_t v0, size_t v1, cmpFuncPtr cmp, size_t v2);
-};
-
-struct CstrLinear: Constraint {
-    size_t * poly;
-    size_t polySize;
-    cmpFuncPtr cmp;
-    size_t v0;
-
-    CUDA_HOST ~CstrLinear();
-    CUDA_DEVICE virtual bool evaluate(const int *);
-    CUDA_DEVICE virtual void describe();
-    CUDA_HOST   static CstrLinear * create(size_t * poly, size_t size, TComparisonType cmp, size_t v0);
-    CUDA_HOST CUDA_DEVICE CstrLinear(size_t * poly, size_t size, cmpFuncPtr cmp, size_t v0);
-};
+CUDA_DEVICE bool cstrLinearEQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrLinearNQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrLinearGQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrLinearGR(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrLinearLQ(uintptr_t * data, int * c);
+CUDA_DEVICE bool cstrLinearLE(uintptr_t * data, int * c);
 
 #endif

@@ -4,253 +4,344 @@
 #include <stdio.h>
 #include <assert.h>
 
-CUDA_DEVICE bool Constraint::cmpEQ(int lhs, int rhs) {
-    return (lhs == rhs);
+CUDA_DEVICE uintptr_t * cstrData;
+CUDA_DEVICE uint32_t    cstrNb;
+
+CUDA_DEVICE cstrFuncPtr     cstrTable[] = {
+        &cstrEq,
+
+        &cstrAndEQ, &cstrAndNQ, &cstrAndGQ,
+        &cstrAndGR, &cstrAndLQ, &cstrAndLE,
+
+        &cstrOrEQ,  &cstrOrNQ,  &cstrOrGQ,
+        &cstrOrGR,  &cstrOrLQ,  &cstrOrLE,
+
+        &cstrImpEQ, &cstrImpNQ, &cstrImpGQ,
+        &cstrImpGR, &cstrImpLQ, &cstrImpLE,
+
+        &cstrXorEQ, &cstrXorNQ, &cstrXorGQ,
+        &cstrXorGR, &cstrXorLQ, &cstrXorLE,
+
+        &cstrPlusEQ,    &cstrPlusNQ,    &cstrPlusGQ,
+        &cstrPlusGR,    &cstrPlusLQ,    &cstrPlusLE,
+
+        &cstrTimesEQ,   &cstrTimesNQ,   &cstrTimesGQ,
+        &cstrTimesGR,   &cstrTimesLQ,   &cstrTimesLE,
+
+        &cstrLinearEQ,  &cstrLinearNQ,  &cstrLinearGQ,
+        &cstrLinearGR,  &cstrLinearLQ,  &cstrLinearLE
+};
+
+CUDA_DEVICE bool cstrEq(uintptr_t * data, int * c) {
+    size_t v0 = (size_t) data[0];
+    int    val = (int)   data[1];
+
+    return v[v0] == val;
 }
 
-CUDA_DEVICE bool Constraint::cmpNQ(int lhs, int rhs) {
-    return (lhs != rhs);
+CUDA_DEVICE bool cstrAndEQ(uintptr_t * data, int * c) {
+    bool p0 = (bool) data[0], p1 = (bool) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opAnd(p0, c[v0], p1, c[v1]) == c[v2];
 }
 
-CUDA_DEVICE bool Constraint::cmpGQ(int lhs, int rhs) {
-    return (lhs > rhs);
+CUDA_DEVICE bool cstrAndNQ(uintptr_t * data, int * c) {
+    bool p0 = (bool) data[0], p1 = (bool) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opAnd(p0, c[v0], p1, c[v1]) != c[v2];
 }
 
-CUDA_DEVICE bool Constraint::cmpGR(int lhs, int rhs) {
-    return (lhs >= rhs);
+CUDA_DEVICE bool cstrAndGQ(uintptr_t * data, int * c) {
+    bool p0 = (bool) data[0], p1 = (bool) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opAnd(p0, c[v0], p1, c[v1]) > c[v2];
 }
 
-CUDA_DEVICE bool Constraint::cmpLQ(int lhs, int rhs) {
-    return (lhs < rhs);
+CUDA_DEVICE bool cstrAndGR(uintptr_t * data, int * c) {
+    bool p0 = (bool) data[0], p1 = (bool) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opAnd(p0, c[v0], p1, c[v1]) >= c[v2];
 }
 
-CUDA_DEVICE bool Constraint::cmpLE(int lhs, int rhs) {
-    return (lhs <= rhs);
+CUDA_DEVICE bool cstrAndLQ(uintptr_t * data, int * c) {
+    bool p0 = (bool) data[0], p1 = (bool) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opAnd(p0, c[v0], p1, c[v1]) < c[v2];
 }
 
-CUDA_DEVICE Constraint::cmpFuncPtr Constraint::getCmpPtr(TComparisonType t) {
-    switch (t) {
-        case CMP_NQ:
-            return &Constraint::cmpNQ;
-        case CMP_EQ:
-            return &Constraint::cmpEQ;
-        case CMP_LQ:
-            return &Constraint::cmpLQ;
-        case CMP_LE:
-            return &Constraint::cmpLE;
-        case CMP_GQ:
-            return &Constraint::cmpGQ;
-        case CMP_GR:
-            return &Constraint::cmpGR;
-        default:
-            assert(0);
-    }
-    return nullptr;
-}
+CUDA_DEVICE bool cstrAndLE(uintptr_t * data, int * c) {
+    bool p0 = (bool) data[0], p1 = (bool) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-CUDA_HOST bool Constraint::evaluate(Constraint ** cstrs, size_t nbCstrs, const int * candidat) {
-#ifdef __CUDACC__
-    return evaluateCstrs(cstrs, nbCstrs, candidat);
-#else
-    for (size_t i = 0; i < nbCstrs; ++i) {
-        if (!cstrs[i]->evaluate(candidat)) return false;
-    }
-    return true;
-#endif
-}
-
-CUDA_DEVICE   void Constraint::describe() {
-    printf("%p\tConstraint\n", this);
-}
-
-CUDA_HOST  CstrEq * CstrEq::create(size_t v0, int v2) {
-#ifdef __CUDACC__
-    CstrEq ** dTmp, *hTmp;
-    CCR(cudaMalloc((void**)&dTmp, sizeof(CstrEq*)));
-    CstrEqKernel<<<1,1>>>(dTmp, v0, v2);
-    CCR(cudaGetLastError());
-    CCR(cudaMemcpy(&hTmp, dTmp, sizeof(CstrTimes*), cudaMemcpyDeviceToHost));
-    CCR(cudaFree(dTmp));
-    return hTmp;
-#else
-    return new CstrEq(v0, v2);
-#endif
-}
-
-CUDA_HOST CUDA_DEVICE CstrEq::CstrEq(size_t v0, int v2):
-    v0(v0), v2(v2)
-{}
-
-CUDA_DEVICE bool CstrEq::evaluate(const int * c) {
-    return c[v0] == c[v2];
-}
-
-CUDA_DEVICE   void CstrEq::describe() {
-    printf("%p\tConstraint Equal\tv[%lu] = %d\n", this, v0, v2);
-}
-
-CUDA_DEVICE CstrBool::opFuncPtr CstrBool::getOpPtr(TOperatorType op) {
-    switch (op) {
-        case OP_AND:
-            return &CstrBool::opAnd;
-        case OP_OR:
-            return &CstrBool::opOr;
-        case OP_IMP:
-            return &CstrBool::opImp;
-        case OP_XOR:
-            return &CstrBool::opXor;
-        default:
-            assert(0);
-    }
-    return nullptr;
-}
-
-CUDA_HOST   CstrBool * CstrBool::create(bool p0, size_t v0, TOperatorType op, bool p1, size_t v1, TComparisonType cmp, size_t v2) {
-#ifdef __CUDACC__
-    CstrBool ** dTmp, * hTmp;
-    CCR(cudaMalloc((void**)&dTmp, sizeof(CstrBool*)));
-    CstrBoolKernel<<<1,1>>>(dTmp, p0, v0, op, p1, v1, cmp, v2);
-    CCR(cudaGetLastError());
-    CCR(cudaMemcpy(&hTmp, dTmp, sizeof(CstrTimes*), cudaMemcpyDeviceToHost));
-    CCR(cudaFree(dTmp));
-    return hTmp;
-#else
-    return new CstrBool(p0, v0, CstrBool::getOpPtr(op), p1, v1, Constraint::getCmpPtr(cmp), v2);
-#endif
-}
-
-CUDA_HOST CUDA_DEVICE CstrBool::CstrBool(bool p0, size_t v0, opFuncPtr op, bool p1, size_t v1, cmpFuncPtr cmp, size_t v2):
-    p0(p0), v0(v0), op(op), p1(p1), v1(v1), cmp(cmp), v2(v2)
-{}
-
-CUDA_DEVICE bool CstrBool::evaluate(const int * c) {
-    return cmp(op(p0, c[v0], p1, c[v1]), c[v2]);
-}
-
-CUDA_DEVICE   void CstrBool::describe() {
-    printf("%p\tConstraint Bool\t%sv[%lu] OP %sv[%lu] CMP v[%lu]\n", this, (p0 ? "" : "!"), v0, (p1 ? "" : "!"), v1, v2);
-}
-
-CUDA_DEVICE bool CstrBool::opAnd(bool p0, bool v0, bool p1, bool v1) {
-    return (p0 ? v0 : !v0) && (p1 ? v1 : !v1);
-}
-
-CUDA_DEVICE bool CstrBool::opOr(bool p0, bool v0, bool p1, bool v1) {
-    return (p0 ? v0 : !v0) || (p1 ? v1 : !v1);
-}
-
-CUDA_DEVICE bool CstrBool::opImp(bool p0, bool v0, bool p1, bool v1) {
-    return !((p0 ? v0 : !v0) && !(p1 ? v1 : !v1));
-}
-
-CUDA_DEVICE bool CstrBool::opXor(bool p0, bool v0, bool p1, bool v1) {
-    return (!(p0 ? v0 : !v0) != !(p1 ? v1 : !v1));
-}
-
-CUDA_HOST   CstrPlus* CstrPlus::create(int n0, size_t v0, int n1, size_t v1, TComparisonType cmp, size_t v2) {
-#ifdef __CUDACC__
-    CstrPlus ** dTmp, * hTmp;
-    CCR(cudaMalloc((void**)&dTmp, sizeof(CstrPlus*)));
-    CstrPlusKernel<<<1,1>>>(dTmp, n0, v0, n1, v1, cmp, v2);
-    CCR(cudaGetLastError());
-    CCR(cudaMemcpy(&hTmp, dTmp, sizeof(CstrTimes*), cudaMemcpyDeviceToHost));
-    CCR(cudaFree(dTmp));
-    return hTmp;
-#else
-    return new CstrPlus(n0, v0, n1, v1, Constraint::getCmpPtr(cmp), v2);
-#endif
-}
-
-CUDA_HOST CUDA_DEVICE CstrPlus::CstrPlus(int n0, size_t v0, int n1, size_t v1, cmpFuncPtr cmp, size_t v2):
-    n0(n0), v0(v0), n1(n1), v1(v1), cmp(cmp), v2(v2)
-{}
-
-CUDA_DEVICE bool CstrPlus::evaluate(const int * c) {
-    return cmp(n0 * c[v0] + n1 * c[v1], v2);
-}
-
-CUDA_DEVICE   void CstrPlus::describe() {
-    printf("%p\tConstraint Plus\t%d * v[%lu] +  %d * v[%lu] CMP v[%lu]\n", this, n0, v0, n1, v1, v2);
-}
-
-CUDA_HOST   CstrTimes * CstrTimes::create(int n, size_t v0, size_t v1, TComparisonType cmp, size_t v2) {
-#ifdef __CUDACC__
-    CstrTimes ** dTmp, * hTmp;
-    CCR(cudaMalloc((void**)&dTmp, sizeof(CstrTimes*)));
-    CstrTimesKernel<<<1,1>>>(dTmp, n, v0, v1, cmp, v2);
-    CCR(cudaGetLastError());
-    CCR(cudaMemcpy(&hTmp, dTmp, sizeof(CstrTimes*), cudaMemcpyDeviceToHost));
-    CCR(cudaFree(dTmp));
-    return hTmp;
-#else
-    return new CstrTimes(n, v0, v1, Constraint::getCmpPtr(cmp), v2);
-#endif
+    return opAnd(p0, c[v0], p1, c[v1]) <= c[v2];
 }
 
 
-CUDA_HOST CUDA_DEVICE CstrTimes::CstrTimes(int n, size_t v0, size_t v1, cmpFuncPtr cmp, size_t v2):
-    n(n), v0(v0), v1(v1), cmp(cmp), v2(v2)
-{}
+CUDA_DEVICE bool cstrOrEQ(uintptr_t * data, int * c) {
+    bool p0 = (bool) data[0], p1 = (bool) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-CUDA_DEVICE bool CstrTimes::evaluate(const int * c) {
-    return cmp(n * c[v0] * c[v1], v2);
+    return opOr(p0, c[v0], p1, c[v1]) == c[v2];
 }
 
-CUDA_DEVICE   void CstrTimes::describe() {
-    printf("%p\tConstraint Times\t%d * v[%lu] * v[%lu] CMP v[%lu]\n", this, n, v0, v1, v2);
+CUDA_DEVICE bool cstrOrNQ(uintptr_t * data, int * c) {
+    bool p0 = (bool) data[0], p1 = (bool) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opOr(p0, c[v0], p1, c[v1]) != c[v2];
 }
 
-CUDA_HOST CstrLinear::~CstrLinear() {
-//TODO: faire un vri bon destructeur
-#ifndef __CUDACC__
-    if (poly) {
-        delete[] poly;
-    }
-#endif
+CUDA_DEVICE bool cstrOrGQ(uintptr_t * data, int * c) {
+    bool p0 = (bool) data[0], p1 = (bool) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opOr(p0, c[v0], p1, c[v1]) > c[v2];
 }
 
-CUDA_HOST   CstrLinear * CstrLinear::create(size_t * poly, size_t size, TComparisonType cmp, size_t v0) {
-#ifdef __CUDACC__
-    CstrLinear ** dTmp, * hTmp;
-    size_t * dPoly;
+CUDA_DEVICE bool cstrOrGR(uintptr_t * data, int * c) {
+    bool p0 = (bool) data[0], p1 = (bool) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    CCR(cudaMalloc((void**)&dTmp, sizeof(CstrLinear*)));
-    CCR(cudaMalloc((void**)&dPoly, 2 * size * sizeof(size_t)));
-    CCR(cudaMemcpy(dPoly, poly, 2 * size * sizeof(size_t), cudaMemcpyHostToDevice));
-    CstrLinearKernel<<<1,1>>>(dTmp, dPoly, size, cmp, v0);
-    CCR(cudaGetLastError());
-    CCR(cudaMemcpy(&hTmp, dTmp, sizeof(CstrTimes*), cudaMemcpyDeviceToHost));
-    CCR(cudaFree(dTmp));
-    return hTmp;
-#else
-    return new CstrLinear(poly, size, Constraint::getCmpPtr(cmp), v0);
-#endif
+    return opOr(p0, c[v0], p1, c[v1]) >= c[v2];
 }
 
-CUDA_HOST CUDA_DEVICE CstrLinear::CstrLinear(size_t * p, size_t polySize, cmpFuncPtr cmp, size_t v0):
-    poly(p), polySize(polySize), cmp(cmp), v0(v0)
-{
-#ifndef __CUDACC__
-    size_t * polyTmp = new size_t[polySize];
-    memcpy(polyTmp, p, polySize * sizeof(size_t));
-    poly = polyTmp;
-#endif
+CUDA_DEVICE bool cstrOrLQ(uintptr_t * data, int * c) {
+    bool p0 = (bool) data[0], p1 = (bool) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opOr(p0, c[v0], p1, c[v1]) < c[v2];
 }
 
-CUDA_DEVICE bool CstrLinear::evaluate(const int * c) {
+CUDA_DEVICE bool cstrOrLE(uintptr_t * data, int * c) {
+    bool p0 = (bool) data[0], p1 = (bool) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opOr(p0, c[v0], p1, c[v1]) <= c[v2];
+}
+
+CUDA_DEVICE bool cstrImpEQ(uintptr_t * data, int * c) {
+    bool p0 = (bool) data[0], p1 = (bool) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opImp(p0, c[v0], p1, c[v1]) == c[v2];
+}
+
+CUDA_DEVICE bool cstrImpNQ(uintptr_t * data, int * c) {
+    bool p0 = (bool) data[0], p1 = (bool) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opImp(p0, c[v0], p1, c[v1]) != c[v2];
+}
+
+CUDA_DEVICE bool cstrImpGQ(uintptr_t * data, int * c) {
+    bool p0 = (bool) data[0], p1 = (bool) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opImp(p0, c[v0], p1, c[v1]) > c[v2];
+}
+
+CUDA_DEVICE bool cstrImpGR(uintptr_t * data, int * c) {
+    bool p0 = (bool) data[0], p1 = (bool) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opImp(p0, c[v0], p1, c[v1]) >= c[v2];
+}
+
+CUDA_DEVICE bool cstrImpLQ(uintptr_t * data, int * c) {
+    bool p0 = (bool) data[0], p1 = (bool) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opImp(p0, c[v0], p1, c[v1]) < c[v2];
+}
+
+CUDA_DEVICE bool cstrImpLE(uintptr_t * data, int * c) {
+    bool p0 = (bool) data[0], p1 = (bool) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opImp(p0, c[v0], p1, c[v1]) <= c[v2];
+}
+
+CUDA_DEVICE bool cstrXorEQ(uintptr_t * data, int * c) {
+    bool p0 = (bool) data[0], p1 = (bool) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opXor(p0, c[v0], p1, c[v1]) == c[v2];
+}
+
+CUDA_DEVICE bool cstrXorNQ(uintptr_t * data, int * c) {
+    bool p0 = (bool) data[0], p1 = (bool) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opXor(p0, c[v0], p1, c[v1]) != c[v2];
+}
+
+CUDA_DEVICE bool cstrXorGQ(uintptr_t * data, int * c) {
+    bool p0 = (bool) data[0], p1 = (bool) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opXor(p0, c[v0], p1, c[v1]) > c[v2];
+}
+
+CUDA_DEVICE bool cstrXorGR(uintptr_t * data, int * c) {
+    bool p0 = (bool) data[0], p1 = (bool) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opXor(p0, c[v0], p1, c[v1]) >= c[v2];
+}
+
+CUDA_DEVICE bool cstrXorLQ(uintptr_t * data, int * c) {
+    bool p0 = (bool) data[0], p1 = (bool) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opXor(p0, c[v0], p1, c[v1]) < c[v2];
+}
+
+CUDA_DEVICE bool cstrXorLE(uintptr_t * data, int * c) {
+    bool p0 = (bool) data[0], p1 = (bool) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opXor(p0, c[v0], p1, c[v1]) <= c[v2];
+}
+
+CUDA_DEVICE bool cstrPlusEQ(uintptr_t * data, int * c) {
+    int n0 = (int) data[0], n1 = (int) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opPlus(n0, c[v0], n1, c[v1]) == c[v2];
+}
+
+CUDA_DEVICE bool cstrPlusNQ(uintptr_t * data, int * c) {
+    int n0 = (int) data[0], n1 = (int) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opPlus(n0, c[v0], n1, c[v1]) != c[v2];
+}
+
+CUDA_DEVICE bool cstrPlusGQ(uintptr_t * data, int * c) {
+    int n0 = (int) data[0], n1 = (int) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opPlus(n0, c[v0], n1, c[v1]) > c[v2];
+}
+
+CUDA_DEVICE bool cstrPlusGR(uintptr_t * data, int * c) {
+    int n0 = (int) data[0], n1 = (int) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opPlus(n0, c[v0], n1, c[v1]) >= c[v2];
+}
+
+CUDA_DEVICE bool cstrPlusLQ(uintptr_t * data, int * c) {
+    int n0 = (int) data[0], n1 = (int) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opPlus(n0, c[v0], n1, c[v1]) < c[v2];
+}
+
+CUDA_DEVICE bool cstrPlusLE(uintptr_t * data, int * c) {
+    int n0 = (int) data[0], n1 = (int) data[2];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
+
+    return opPlus(n0, c[v0], n1, c[v1]) <= c[v2];
+}
+
+CUDA_DEVICE bool cstrTimesEQ(uintptr_t * data, int * c) {
+    int n = (int) data[0];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[2], v2 = (size_t) data[3];
+
+    return opTimes(n0, c[v0], n1, c[v1]) == c[v2];
+}
+
+CUDA_DEVICE bool cstrTimesNQ(uintptr_t * data, int * c) {
+    int n = (int) data[0];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[2], v2 = (size_t) data[3];
+
+    return opTimes(n0, c[v0], n1, c[v1]) != c[v2];
+}
+
+CUDA_DEVICE bool cstrTimesGQ(uintptr_t * data, int * c) {
+    int n = (int) data[0];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[2], v2 = (size_t) data[3];
+
+    return opTimes(n0, c[v0], n1, c[v1]) > c[v2];
+}
+
+CUDA_DEVICE bool cstrTimesGR(uintptr_t * data, int * c) {
+    int n = (int) data[0];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[2], v2 = (size_t) data[3];
+
+    return opTimes(n0, c[v0], n1, c[v1]) >= c[v2];
+}
+
+CUDA_DEVICE bool cstrTimesLQ(uintptr_t * data, int * c) {
+    int n = (int) data[0];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[2], v2 = (size_t) data[3];
+
+    return opTimes(n0, c[v0], n1, c[v1]) < c[v2];
+}
+
+CUDA_DEVICE bool cstrTimesLE(uintptr_t * data, int * c) {
+    int n = (int) data[0];
+    size_t v0 = (size_t) data[1], v1 = (size_t) data[2], v2 = (size_t) data[3];
+
+    return opTimes(n0, c[v0], n1, c[v1]) <= c[v2];
+}
+
+CUDA_DEVICE bool cstrLinearEQ(uintptr_t * data, int * c) {
+    size_t * v = (size_t*) data[0], size = (size_t) data[1];
+    size_t v0 = (size_t) data[2];
     int sum = 0;
 
-    for (size_t i = 0; i < polySize; ++i) {
-        sum += poly[2 * i] * c[poly[2 * i + 1]];
-    }
-
-    return cmp(sum, c[v0]);
+    opLinear(v, size, sum);
+    return sum == c[v0];
 }
 
-CUDA_DEVICE   void CstrLinear::describe() {
-    printf("%p\tConstraint Linear\t", this);
-    for (size_t i = 0; i < (polySize - 1); ++i) {
-        printf("%lu * v[%lu] + ", poly[2 * i], poly[(2 * i) + 1]);
-    }
-    printf("%lu * v[%lu] CMP v[%lu]\n", poly[(2 * polySize) - 2], poly[(2 * polySize) - 1], v0);
+CUDA_DEVICE bool cstrLinearNQ(uintptr_t * data, int * c) {
+    size_t * v = (size_t*) data[0], size = (size_t) data[1];
+    size_t v0 = (size_t) data[2];
+    int sum = 0;
+
+    opLinear(v, size, sum);
+    return sum != c[v0];
+}
+
+CUDA_DEVICE bool cstrLinearGQ(uintptr_t * data, int * c) {
+    size_t * v = (size_t*) data[0], size = (size_t) data[1];
+    size_t v0 = (size_t) data[2];
+    int sum = 0;
+
+    opLinear(v, size, sum);
+    return sum > c[v0];
+}
+
+CUDA_DEVICE bool cstrLinearGR(uintptr_t * data, int * c) {
+    size_t * v = (size_t*) data[0], size = (size_t) data[1];
+    size_t v0 = (size_t) data[2];
+    int sum = 0;
+
+    opLinear(v, size, sum);
+    return sum >= c[v0];
+}
+
+CUDA_DEVICE bool cstrLinearLQ(uintptr_t * data, int * c) {
+    size_t * v = (size_t*) data[0], size = (size_t) data[1];
+    size_t v0 = (size_t) data[2];
+    int sum = 0;
+
+    opLinear(v, size, sum);
+    return sum < c[v0];
+}
+
+CUDA_DEVICE bool cstrLinearLE(uintptr_t * data, int * c) {
+    size_t * v = (size_t*) data[0], size = (size_t) data[1];
+    size_t v0 = (size_t) data[2];
+    int sum = 0;
+
+    opLinear(v, size, sum);
+    return sum <= c[v0];
 }
