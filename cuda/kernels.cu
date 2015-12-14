@@ -7,16 +7,8 @@
 #include <cuda/constraints.hh>
 #include <cuda/cuda.hh>
 
-__device__ Constraint* dCstrs[512];
-__device__ size_t      dNbCstrs;
-
 __global__ void fooKernel() {
     printf("Foo on GPU.\n");
-
-    for (size_t i = 0; i < dNbCstrs; ++i) {
-        dCstrs[i]->describe();
-    }
-
 }
 
 void foo() {
@@ -25,10 +17,6 @@ void foo() {
     CCR(cudaGetLastError());
     CCR(cudaDeviceSynchronize());
     printf("After foo\n");
-}
-
-bool evaluateCstrs(Constraint ** cstrs, size_t nbCstrs, const int * candidat) {
-    return true;
 }
 
 #endif
