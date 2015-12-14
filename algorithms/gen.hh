@@ -61,8 +61,6 @@ class GenAlgo : public AsyncAlgo {
 
     std::vector<VarDesc> mVars;
 
-    std::vector<Constraint*>  mCstrs;
-
     // Restaure the domain of var in the interval ]from, to]
     void restaureDomaines(int from, int to);
 

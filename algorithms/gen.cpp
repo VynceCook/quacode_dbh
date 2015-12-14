@@ -165,8 +165,8 @@ void GenAlgo::postedAnd(bool p0, const std::string& v0, bool p1, const std::stri
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
-        Constraint * tmp = CstrBool::create(p0, v0Idx, OP_AND, p1, v1Idx, cmp, v2Idx);
-        mCstrs.push_back(tmp);
+        // Constraint * tmp = CstrBool::create(p0, v0Idx, OP_AND, p1, v1Idx, cmp, v2Idx);
+        // mCstrs.push_back(tmp);
     }
     else {
         OSTREAM << "Can't find on of the variables " << v0 << ", " << v1 << ", " << v2 << std::endl;
@@ -180,8 +180,8 @@ void GenAlgo::postedOr(bool p0, const std::string& v0, bool p1, const std::strin
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
-        Constraint * tmp = CstrBool::create(p0, v0Idx, OP_OR, p1, v1Idx, cmp, v2Idx);
-        mCstrs.push_back(tmp);
+        // Constraint * tmp = CstrBool::create(p0, v0Idx, OP_OR, p1, v1Idx, cmp, v2Idx);
+        // mCstrs.push_back(tmp);
     }
     else {
         OSTREAM << "Can't find on of the variables " << v0 << ", " << v1 << ", " << v2 << std::endl;
@@ -195,8 +195,8 @@ void GenAlgo::postedImp(bool p0, const std::string& v0, bool p1, const std::stri
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
-        Constraint * tmp = CstrBool::create(p0, v0Idx, OP_IMP, p1, v1Idx, cmp, v2Idx);
-        mCstrs.push_back(tmp);
+        // Constraint * tmp = CstrBool::create(p0, v0Idx, OP_IMP, p1, v1Idx, cmp, v2Idx);
+        // mCstrs.push_back(tmp);
     }
     else {
         OSTREAM << "Can't find on of the variables " << v0 << ", " << v1 << ", " << v2 << std::endl;
@@ -210,8 +210,8 @@ void GenAlgo::postedXOr(bool p0, const std::string& v0, bool p1, const std::stri
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
-        Constraint * tmp = CstrBool::create(p0, v0Idx, OP_XOR, p1, v1Idx, cmp, v2Idx);
-        mCstrs.push_back(tmp);
+        // Constraint * tmp = CstrBool::create(p0, v0Idx, OP_XOR, p1, v1Idx, cmp, v2Idx);
+        // mCstrs.push_back(tmp);
     }
     else {
         OSTREAM << "Can't find on of the variables " << v0 << ", " << v1 << ", " << v2 << std::endl;
@@ -226,8 +226,8 @@ void GenAlgo::postedPlus(int n0, const std::string& v0, int n1, const std::strin
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
-        Constraint * tmp = CstrPlus::create(n0, v0Idx, n1, v1Idx, cmp, v2Idx);
-        mCstrs.push_back(tmp);
+        // Constraint * tmp = CstrPlus::create(n0, v0Idx, n1, v1Idx, cmp, v2Idx);
+        // mCstrs.push_back(tmp);
     }
     else {
         OSTREAM << "Can't find on of the variables " << v0 << ", " << v1 << ", " << v2 << std::endl;
@@ -241,8 +241,8 @@ void GenAlgo::postedTimes(int n, const std::string& v0, const std::string& v1, T
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
-        Constraint * tmp = CstrTimes::create(n, v0Idx, v1Idx, cmp, v2Idx);
-        mCstrs.push_back(tmp);
+        // Constraint * tmp = CstrTimes::create(n, v0Idx, v1Idx, cmp, v2Idx);
+        // mCstrs.push_back(tmp);
     }
     else {
         OSTREAM << "Can't find on of the variables " << v0 << ", " << v1 << ", " << v2 << std::endl;
@@ -277,8 +277,8 @@ void GenAlgo::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, 
                 GECODE_NEVER
             }
         }
-        Constraint * tmp = CstrLinear::create(polyCpy2, poly.size(), cmp, v0Idx);
-        mCstrs.push_back(tmp);
+        // Constraint * tmp = CstrLinear::create(polyCpy2, poly.size(), cmp, v0Idx);
+        // mCstrs.push_back(tmp);
         delete[] polyCpy2;
     }
     else {
