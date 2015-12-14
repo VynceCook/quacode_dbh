@@ -11,7 +11,7 @@ typedef bool (*cstrFuncPtr)(uintptr_t *, int *);
 
 #define opAnd(__p0, __v0, __p1, __v1)                                           \
             (((__p0) ? (__v0) : !(__v0)) && ((__p1) ? (__v1) : !(__v1)))
-#define opOr (__p0, __v0, __p1, __v1)                                           \
+#define opOr(__p0, __v0, __p1, __v1)                                           \
             (((__p0) ? (__v0) : !(__v0)) || ((__p1) ? (__v1) : !(__v1)))
 #define opImp(__p0, __v0, __p1, __v1)                                           \
             (!(((__p0) ? (__v0) : !(__v0)) && !((__p1) ? (__v1) : !(__v1))))

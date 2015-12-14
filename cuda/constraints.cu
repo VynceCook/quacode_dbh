@@ -36,7 +36,7 @@ CUDA_DEVICE bool cstrEq(uintptr_t * data, int * c) {
     size_t v0 = (size_t) data[0];
     int    val = (int)   data[1];
 
-    return v[v0] == val;
+    return c[v0] == val;
 }
 
 CUDA_DEVICE bool cstrAndEQ(uintptr_t * data, int * c) {
