@@ -152,7 +152,7 @@ void GenAlgo::postedEq(const std::string& v0, int val) {
 
     if (v0Idx != (size_t)-1) {
 		mCstrs.insert(mCstrs.end(), {
-				(CSTR_EQ_IDX << 3), v0Idx, val, NULL,
+				(CSTR_EQ_IDX << 3), v0Idx, int2uint(val), NULL,
 				NULL, NULL, NULL, NULL
 				});
     }
@@ -248,7 +248,7 @@ void GenAlgo::postedPlus(int n0, const std::string& v0, int n1, const std::strin
         // Constraint * tmp = CstrPlus::create(n0, v0Idx, n1, v1Idx, cmp, v2Idx);
         // mCstrs.push_back(tmp);
         mCstrs.insert(mCstrs.end(), {
-                (CSTR_PLUS_IDX << 3) | cmp, n0, v0Idx, n1,
+                (CSTR_PLUS_IDX << 3) | cmp, int2uint(n0), v0Idx, int2uint(n1),
                 v1Idx, v2Idx, NULL, NULL
                 });
     }
@@ -267,7 +267,7 @@ void GenAlgo::postedTimes(int n, const std::string& v0, const std::string& v1, T
         // Constraint * tmp = CstrTimes::create(n, v0Idx, v1Idx, cmp, v2Idx);
         // mCstrs.push_back(tmp);
         mCstrs.insert(mCstrs.end(), {
-                (CSTR_TIMES_IDX << 3) | cmp, n, v0Idx, v1Idx,
+                (CSTR_TIMES_IDX << 3) | cmp, int2uint(n), v0Idx, v1Idx,
                 v2Idx, NULL, NULL, NULL
                 });
     }
