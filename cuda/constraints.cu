@@ -7,29 +7,30 @@
 CUDA_DEVICE uintptr_t * cstrData;
 CUDA_DEVICE uint32_t    cstrNb;
 
-CUDA_DEVICE cstrFuncPtr     cstrTable[] = {
-        &cstrEq,
+CUDA_DEVICE cstrFuncPtr     cstrTable[64] = {
+        &cstrNQ,       NULL,          NULL,          NULL,
+        NULL,          NULL,          NULL,          NULL,
 
-        &cstrAndEQ, &cstrAndNQ, &cstrAndGQ,
-        &cstrAndGR, &cstrAndLQ, &cstrAndLE,
+        &cstrAndNQ,    &cstrAndEQ,    &cstrAndLQ,    &cstrAndLE,
+        &cstrAndGQ,    &cstrAndGR,    NULL,          NULL,
 
-        &cstrOrEQ,  &cstrOrNQ,  &cstrOrGQ,
-        &cstrOrGR,  &cstrOrLQ,  &cstrOrLE,
+        &cstrOrNQ,     &cstrOrEQ,     &cstrOrLQ,     &cstrOrLE,
+        &cstrOrGQ,     &cstrOrGR,     NULL,          NULL,
 
-        &cstrImpEQ, &cstrImpNQ, &cstrImpGQ,
-        &cstrImpGR, &cstrImpLQ, &cstrImpLE,
+        &cstrImpNQ,    &cstrImpEQ,    &cstrImpLQ,    &cstrImpLE,
+        &cstrImpGQ,    &cstrImpGR,    NULL,          NULL,
 
-        &cstrXorEQ, &cstrXorNQ, &cstrXorGQ,
-        &cstrXorGR, &cstrXorLQ, &cstrXorLE,
+        &cstrXorNQ,    &cstrXorEQ,    &cstrXorLQ,    &cstrXorLE,
+        &cstrXorGQ,    &cstrXorGR,    NULL,          NULL,
 
-        &cstrPlusEQ,    &cstrPlusNQ,    &cstrPlusGQ,
-        &cstrPlusGR,    &cstrPlusLQ,    &cstrPlusLE,
+        &cstrPlusNQ,   &cstrPlusEQ,   &cstrPlusLQ,   &cstrPlusLE,
+        &cstrPlusGQ,   &cstrPlusGR,   NULL,          NULL,
 
-        &cstrTimesEQ,   &cstrTimesNQ,   &cstrTimesGQ,
-        &cstrTimesGR,   &cstrTimesLQ,   &cstrTimesLE,
+        &cstrTimesNQ,  &cstrTimesEQ,  &cstrTimesLQ,  &cstrTimesLE, 
+        &cstrTimesGQ,  &cstrTimesGR,  NULL,          NULL,
 
-        &cstrLinearEQ,  &cstrLinearNQ,  &cstrLinearGQ,
-        &cstrLinearGR,  &cstrLinearLQ,  &cstrLinearLE
+        &cstrLinearNQ, &cstrLinearEQ, &cstrLinearLQ, &cstrLinearLE,
+        &cstrLinearGQ, &cstrLinearGR, NULL,          NULL
 };
 
 CUDA_DEVICE bool cstrEq(uintptr_t * data, int * c) {
