@@ -332,7 +332,7 @@ size_t GenAlgo::findVar(const std::string & name) {
 }
 
 bool GenAlgo::evaluate(const std::vector<int> &vars) {
-    return Constraint::evaluate(mCstrs.data(), mCstrs.size(), vars.data());
+    // return Constraint::evaluate(mCstrs.data(), mCstrs.size(), vars.data());
 }
 
 /*

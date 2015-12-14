@@ -11,7 +11,7 @@ typedef bool (*cstrFuncPtr)(uintptr_t *, int *);
 
 #define opAnd(__p0, __v0, __p1, __v1)                                           \
             (((__p0) ? (__v0) : !(__v0)) && ((__p1) ? (__v1) : !(__v1)))
-#define opOr (__p0, __v0, __p1, __v1)                                           \
+#define opOr(__p0, __v0, __p1, __v1)                                           \
             (((__p0) ? (__v0) : !(__v0)) || ((__p1) ? (__v1) : !(__v1)))
 #define opImp(__p0, __v0, __p1, __v1)                                           \
             (!(((__p0) ? (__v0) : !(__v0)) && !((__p1) ? (__v1) : !(__v1))))
@@ -20,9 +20,9 @@ typedef bool (*cstrFuncPtr)(uintptr_t *, int *);
 #define opPlus(__n0, __v0, __n1, __v1)                                          \
             ((__n0) * (__v0) + (__n1) * (__v1))
 #define opTimes(__n, __v0, __v1)                                                \
-            ((__n0) * (__v0) * (__v1))
+            ((__n) * (__v0) * (__v1))
 #define opLinear(__v, __size, __sum)                                            \
-            do {                                                                \
+            do {                                                                \
                 for (int i = 0; i < __size; i += 2) {                           \
                     __sum += __v[i] * __v[i + 1];                               \
                 }                                                               \

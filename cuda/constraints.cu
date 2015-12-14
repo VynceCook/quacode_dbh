@@ -37,7 +37,7 @@ CUDA_DEVICE bool cstrEq(uintptr_t * data, int * c) {
     size_t v0 = (size_t) data[0];
     int    val = (int)   data[1];
 
-    return v[v0] == val;
+    return c[v0] == val;
 }
 
 CUDA_DEVICE bool cstrAndEQ(uintptr_t * data, int * c) {
@@ -255,42 +255,42 @@ CUDA_DEVICE bool cstrTimesEQ(uintptr_t * data, int * c) {
     int n = (int) data[0];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[2], v2 = (size_t) data[3];
 
-    return opTimes(n0, c[v0], n1, c[v1]) == c[v2];
+    return opTimes(n, c[v0], c[v1]) == c[v2];
 }
 
 CUDA_DEVICE bool cstrTimesNQ(uintptr_t * data, int * c) {
     int n = (int) data[0];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[2], v2 = (size_t) data[3];
 
-    return opTimes(n0, c[v0], n1, c[v1]) != c[v2];
+    return opTimes(n, c[v0], c[v1]) != c[v2];
 }
 
 CUDA_DEVICE bool cstrTimesGQ(uintptr_t * data, int * c) {
     int n = (int) data[0];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[2], v2 = (size_t) data[3];
 
-    return opTimes(n0, c[v0], n1, c[v1]) > c[v2];
+    return opTimes(n, c[v0], c[v1]) > c[v2];
 }
 
 CUDA_DEVICE bool cstrTimesGR(uintptr_t * data, int * c) {
     int n = (int) data[0];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[2], v2 = (size_t) data[3];
 
-    return opTimes(n0, c[v0], n1, c[v1]) >= c[v2];
+    return opTimes(n, c[v0], c[v1]) >= c[v2];
 }
 
 CUDA_DEVICE bool cstrTimesLQ(uintptr_t * data, int * c) {
     int n = (int) data[0];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[2], v2 = (size_t) data[3];
 
-    return opTimes(n0, c[v0], n1, c[v1]) < c[v2];
+    return opTimes(n, c[v0], c[v1]) < c[v2];
 }
 
 CUDA_DEVICE bool cstrTimesLE(uintptr_t * data, int * c) {
     int n = (int) data[0];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[2], v2 = (size_t) data[3];
 
-    return opTimes(n0, c[v0], n1, c[v1]) <= c[v2];
+    return opTimes(n, c[v0], c[v1]) <= c[v2];
 }
 
 CUDA_DEVICE bool cstrLinearEQ(uintptr_t * data, int * c) {
