@@ -306,15 +306,13 @@ void GenAlgo::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, 
         }
         // Constraint * tmp = CstrLinear::create(polyCpy2, poly.size(), cmp, v0Idx);
         // mCstrs.push_back(tmp);
-		//
-		// TODO Transfert array to GPU
-		cudaMalloc(d_polyCpy, poly.size() * sizeof(size_t));
-		cudaMemcpy(d_polyCpy, h_polyCpyStart, poly.size() * sizeof(size_t), cudaHostToDevice);
+		CCR(cudaMalloc(d_polyCpy, poly.size() * sizeof(size_t)));
+		CCR(cudaMemcpy(d_polyCpy, h_polyCpyStart, poly.size() * sizeof(size_t), cudaHostToDevice));
 		mCstrs.insert(mCstrs.end(), {
-				(CSTR_LINEAR_IDX << 3) | cmp, d_polyCpy, poly.size(), v0Idx,
+				(CSTR_LINEAR_IDX << 3) | cmp, (uintptr_t) d_polyCpy, poly.size(), v0Idx,
 				NULL, NULL, NULL, NULL
 				});
-        delete[] polyCpy2;
+        delete[] d_polyCpy2;
     }
     else {
         OSTREAM << "Can't find variable " << v0 << std::endl;
@@ -355,6 +353,7 @@ size_t GenAlgo::findVar(const std::string & name) {
 
 bool GenAlgo::evaluate(const std::vector<int> &vars) {
     // return Constraint::evaluate(mCstrs.data(), mCstrs.size(), vars.data());
+	return(true);
 }
 
 /*
