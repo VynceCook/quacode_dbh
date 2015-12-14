@@ -10,6 +10,6 @@ CUDA_GLOBAL void fooKernel();
 
 
 void foo();
-bool evaluateCstrs(Constraint **, size_t, const int *);
+// bool evaluateCstrs(Constraint **, size_t, const int *);
 
 #endif
