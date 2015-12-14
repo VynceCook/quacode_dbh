@@ -93,44 +93,44 @@ GenAlgo::~GenAlgo() {
 
 void GenAlgo::newVarCreated(int idx, Gecode::TQuantifier q, const std::string& name, TVarType t, int min, int max) {
     LOG(OSTREAM << "New var " << idx << "/" <<  printType(t) << " : " << name << ", type " << (q == EXISTS ? "E" : "F") << ", dom {" << min << "," << max << "}" <<std::endl;)
-        mVars.push_back({idx, q, name, t, min, max, min, max});
+    mVars.push_back({idx, q, name, t, min, max, min, max});
     ++mNbVars;
     ++mNbBinderVars;
 }
 
 void GenAlgo::newAuxVarCreated(const std::string& name, TVarType t, int min, int max) {
     LOG(OSTREAM << "New auxiliary var " << name << "/" << printType(t) << ", dom {" << min << "," << max << "}" << std::endl;)
-        mVars.push_back({-1, EXISTS, name, t, min, max, min, max});
+    mVars.push_back({-1, EXISTS, name, t, min, max, min, max});
     ++mNbVars;
 }
 
 void GenAlgo::newChoice(int iVar, int min, int max) {
     LOG(OSTREAM << "Chef ! We need to explore others choices : " << iVar << " {" << min << "," << max << "}" << std::endl;)
 
-        if (iVar < mLastChoice) {
-            restaureDomaines(iVar, mLastChoice);
-        }
+    if (iVar < mLastChoice) {
+        restaureDomaines(iVar, mLastChoice);
+    }
 
     mVars[iVar].curDom = {min, max};
     mLastChoice = iVar;
 
     LOG(
-            for(auto s : mVars) {
-            OSTREAM << "{" << s.curDom.min << "," << s.curDom.max << "}" << ", ";
-            }
-            OSTREAM << std::endl;)
+    for(auto s : mVars) {
+        OSTREAM << "{" << s.curDom.min << "," << s.curDom.max << "}" << ", ";
+    }
+    OSTREAM << std::endl;)
 }
 
 void GenAlgo::newPromisingScenario(const TScenario& scenario) {
     LOG(
-            OSTREAM << "Chef ! I think this scenario is interesting : ";
-            for (auto s: scenario) {
-            OSTREAM << "{" << s.min << "," << s.max << "}, ";
-            }
-            OSTREAM << std::endl;
-       )
+    OSTREAM << "Chef ! I think this scenario is interesting : ";
+    for (auto s: scenario) {
+        OSTREAM << "{" << s.min << "," << s.max << "}, ";
+    }
+    OSTREAM << std::endl;
+    )
 
-        if (scenario.size()) return;
+    if (scenario.size()) return;
 }
 
 void GenAlgo::strategyFound() {
@@ -148,15 +148,13 @@ void GenAlgo::globalFailure() {
 /// Function called when a new 'v0 == v2' constraint is posted
 void GenAlgo::postedEq(const std::string& v0, int val) {
     LOG(OSTREAM << "New constraint Eq " << v0 << "=" << val << std::endl;)
-        size_t v0Idx = findVar(v0);
+    size_t v0Idx = findVar(v0);
 
     if (v0Idx != (size_t)-1) {
-        // Constraint * tmp = CstrEq::create(v0Idx, val);
-        // mCstrs.push_back(tmp);
-        mCstrs.insert(mCstrs.end(), {
-                (CSTR_EQ_IDX << 3), v0Idx, val, NULL,
-                NULL, NULL, NULL, NULL
-                });
+		mCstrs.insert(mCstrs.end(), {
+				(CSTR_EQ_IDX << 3), v0Idx, val, NULL,
+				NULL, NULL, NULL, NULL
+				});
     }
     else {
         OSTREAM << "Can't find " << v0 << std::endl;
@@ -167,7 +165,7 @@ void GenAlgo::postedEq(const std::string& v0, int val) {
 /// Function called when a new 'p0v0 && p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
 void GenAlgo::postedAnd(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
     LOG(OSTREAM << "New constraint And " << p0 << ":" << v0 << " && " << p1 << ":" << v1 << " " << printComp(cmp) << " " << v2 << std::endl;)
-        size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
+    size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
         // Constraint * tmp = CstrBool::create(p0, v0Idx, OP_AND, p1, v1Idx, cmp, v2Idx);
@@ -186,7 +184,7 @@ void GenAlgo::postedAnd(bool p0, const std::string& v0, bool p1, const std::stri
 /// Function called when a new 'p0v0 || p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
 void GenAlgo::postedOr(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
     LOG(OSTREAM << "New constraint Or " << p0 << ":" << v0 << " || " << p1 << ":" << v1 << " " << printComp(cmp) << " " << v2 << std::endl;)
-        size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
+    size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
         // Constraint * tmp = CstrBool::create(p0, v0Idx, OP_OR, p1, v1Idx, cmp, v2Idx);
@@ -205,7 +203,7 @@ void GenAlgo::postedOr(bool p0, const std::string& v0, bool p1, const std::strin
 /// Function called when a new 'p0v0 >> p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
 void GenAlgo::postedImp(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
     LOG(OSTREAM << "New constraint Imp " << p0 << ":" << v0 << " >> " << p1 << ":" << v1 << " " << printComp(cmp) << " " << v2 << std::endl;)
-        size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
+    size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
         // Constraint * tmp = CstrBool::create(p0, v0Idx, OP_IMP, p1, v1Idx, cmp, v2Idx);
@@ -224,7 +222,7 @@ void GenAlgo::postedImp(bool p0, const std::string& v0, bool p1, const std::stri
 /// Function called when a new 'p0v0 ^ p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
 void GenAlgo::postedXOr(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
     LOG(OSTREAM << "New constraint Xor " << p0 << ":" << v0 << " ^ " << p1 << ":" << v1 << " " << printComp(cmp) << " " << v2 << std::endl;)
-        size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
+    size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
         // Constraint * tmp = CstrBool::create(p0, v0Idx, OP_XOR, p1, v1Idx, cmp, v2Idx);
@@ -244,7 +242,7 @@ void GenAlgo::postedXOr(bool p0, const std::string& v0, bool p1, const std::stri
 /// Function called when a new 'n0*v0 + n1*v1 <cmp> v2' constraint is posted
 void GenAlgo::postedPlus(int n0, const std::string& v0, int n1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
     LOG(OSTREAM << "New constraint Plus " << n0 << "*" << v0 << " + " << n1 << "*" << v1 << " " << printComp(cmp) << " " << v2 << std::endl;)
-        size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
+    size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
         // Constraint * tmp = CstrPlus::create(n0, v0Idx, n1, v1Idx, cmp, v2Idx);
@@ -263,7 +261,7 @@ void GenAlgo::postedPlus(int n0, const std::string& v0, int n1, const std::strin
 /// Function called when a new 'n*v0*v1 <cmp> v2' constraint is posted
 void GenAlgo::postedTimes(int n, const std::string& v0, const std::string& v1, TComparisonType cmp, const std::string& v2) {
     LOG(OSTREAM << "New constraint Times " << n << "*" << v0 << "*" << v1 << " " << printComp(cmp) << " " << v2 << std::endl;)
-        size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
+    size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
         // Constraint * tmp = CstrTimes::create(n, v0Idx, v1Idx, cmp, v2Idx);
@@ -358,6 +356,7 @@ size_t GenAlgo::findVar(const std::string & name) {
 
 bool GenAlgo::evaluate(const std::vector<int> &vars) {
     // return Constraint::evaluate(mCstrs.data(), mCstrs.size(), vars.data());
+    return(true);
 }
 
 /*
