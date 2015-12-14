@@ -68,7 +68,8 @@ class GenAlgo : public AsyncAlgo {
     int mNbBinderVars;
     int mLastChoice;
 
-    std::vector<VarDesc> mVars;
+    std::vector<VarDesc>   mVars;
+	std::vector<uintptr_t> mCstrs;
 
     // Restaure the domain of var in the interval ]from, to]
     void restaureDomaines(int from, int to);
