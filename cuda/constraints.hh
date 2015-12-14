@@ -22,7 +22,7 @@ typedef bool (*cstrFuncPtr)(uintptr_t *, int *);
 #define opTimes(__n, __v0, __v1)                                                \
             ((__n) * (__v0) * (__v1))
 #define opLinear(__v, __size, __sum)                                            \
-            do {                                                                \
+            do {                                                                \
                 for (int i = 0; i < __size; i += 2) {                           \
                     __sum += __v[i] * __v[i + 1];                               \
                 }                                                               \
