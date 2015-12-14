@@ -20,7 +20,7 @@ typedef bool (*cstrFuncPtr)(uintptr_t *, int *);
 #define opPlus(__n0, __v0, __n1, __v1)                                          \
             ((__n0) * (__v0) + (__n1) * (__v1))
 #define opTimes(__n, __v0, __v1)                                                \
-            ((__n0) * (__v0) * (__v1))
+            ((__n) * (__v0) * (__v1))
 #define opLinear(__v, __size, __sum)                                            \
             do {                                                                \
                 for (int i = 0; i < __size; i += 2) {                           \
