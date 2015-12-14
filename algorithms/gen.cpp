@@ -65,8 +65,6 @@ std::string printType(TVarType t) {
 #define LOG(__s) /* void */
 #endif
 
-Vector<size_t> mCstrs;
-
 void GenAlgo::restaureDomaines(int from, int to) {
     for (int i = from + 1; i <= to; ++i) {
         mVars[i].curDom = mVars[i].dom;
