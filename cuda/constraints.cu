@@ -5,8 +5,17 @@
 #include <stdio.h>
 #include <assert.h>
 
-CUDA_DEVICE uintptr_t * cstrData;
-CUDA_DEVICE uint32_t    cstrNb;
+#define CSTR_VAL_2X     CSTR_NO,  CSTR_NO
+#define CSTR_VAL_4X     CSTR_VAL_2X,  CSTR_VAL_2X
+#define CSTR_VAL_8X     CSTR_VAL_4X,  CSTR_VAL_4X
+#define CSTR_VAL_16X    CSTR_VAL_8X,  CSTR_VAL_8X
+#define CSTR_VAL_32X    CSTR_VAL_16X, CSTR_VAL_16X
+#define CSTR_VAL_64X    CSTR_VAL_32X, CSTR_VAL_32X
+#define CSTR_VAL_128X   CSTR_VAL_64X, CSTR_VAL_64X
+#define CSTR_VAL_256X   CSTR_VAL_128X, CSTR_VAL_128X
+#define CSTR_VAL_512X   CSTR_VAL_256X, CSTR_VAL_256X
+
+CUDA_DEVICE __constant__ uintptr_t cstrData[1024] = {CSTR_VAL_512X, CSTR_VAL_512X};
 
 CUDA_DEVICE cstrFuncPtr     cstrTable[64] = {
         &cstrEq,       NULL,          NULL,          NULL,
@@ -33,6 +42,19 @@ CUDA_DEVICE cstrFuncPtr     cstrTable[64] = {
         &cstrLinearNQ, &cstrLinearEQ, &cstrLinearLQ, &cstrLinearLE,
         &cstrLinearGQ, &cstrLinearGR, NULL,          NULL
 };
+
+CUDA_HOST void pushCstrToGPU(uintptr_t * cstrs, size_t size) {
+    CCR(cudaMemcpyToSymbol(cstrData, cstrs, size * sizeof(uintptr_t)));
+}
+
+CUDA_DEVICE bool cstrValidate(int * c) {
+    for (size_t i = 0; cstrData[8 * i] != CSTR_NO; ++i) {
+        if (!cstrTable[cstrData[8 * i]](cstrData + (8 * i) + 1, c)) {
+            return false;
+        }
+    }
+    return true;
+}
 
 CUDA_DEVICE bool cstrEq(uintptr_t * data, int * c) {
     size_t v0 = (size_t) data[0];

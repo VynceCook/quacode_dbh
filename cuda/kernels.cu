@@ -7,8 +7,14 @@
 #include <cuda/constraints.hh>
 #include <cuda/cuda.hh>
 
+extern CUDA_DEVICE __constant__ uintptr_t cstrData[1024];
+
 __global__ void fooKernel() {
     printf("Foo on GPU.\n");
+
+    for (size_t i = 0; cstrData[8 * i] != CSTR_NO; ++i) {
+        printf("Une contrainte\n");
+    }
 }
 
 void foo() {

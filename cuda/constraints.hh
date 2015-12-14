@@ -8,10 +8,20 @@
 
 typedef bool (*cstrFuncPtr)(uintptr_t *, int *);
 
+#define CSTR_NO         INTMAX_MAX
+
+#define CSTR_EQ_IDX     0x0
+#define CSTR_AND_IDX    0x1
+#define CSTR_OR_IDX     0x2
+#define CSTR_IMP_IDX    0x3
+#define CSTR_XOR_IDX    0x4
+#define CSTR_PLUS_IDX   0x5
+#define CSTR_TIMES_IDX  0x6
+#define CSTR_LINEAR_IDX 0x7
 
 #define opAnd(__p0, __v0, __p1, __v1)                                           \
             (((__p0) ? (__v0) : !(__v0)) && ((__p1) ? (__v1) : !(__v1)))
-#define opOr(__p0, __v0, __p1, __v1)                                           \
+#define opOr(__p0, __v0, __p1, __v1)                                            \
             (((__p0) ? (__v0) : !(__v0)) || ((__p1) ? (__v1) : !(__v1)))
 #define opImp(__p0, __v0, __p1, __v1)                                           \
             (!(((__p0) ? (__v0) : !(__v0)) && !((__p1) ? (__v1) : !(__v1))))
@@ -28,6 +38,10 @@ typedef bool (*cstrFuncPtr)(uintptr_t *, int *);
                 }                                                               \
             } while(0)
 
+
+CUDA_HOST   void pushCstrToGPU(uintptr_t * cstrs, size_t size);
+
+CUDA_DEVICE bool cstrValidate(int * c);
 
 CUDA_DEVICE bool cstrEq(uintptr_t * data, int * c);
 

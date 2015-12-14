@@ -30,15 +30,6 @@
 #ifndef __GEN_H__
 #define __GEN_H__
 
-#define CSTR_EQ_IDX     0x0
-#define CSTR_AND_IDX    0x1
-#define CSTR_OR_IDX     0x2
-#define CSTR_IMP_IDX    0x3
-#define CSTR_XOR_IDX    0x4
-#define CSTR_PLUS_IDX   0x5
-#define CSTR_TIMES_IDX  0x6
-#define CSTR_LINEAR_IDX 0x7
-
 #ifdef QUACODE_USE_CUDA
 
 #include <quacode/asyncalgo.hh>

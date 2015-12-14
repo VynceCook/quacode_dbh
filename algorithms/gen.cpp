@@ -326,6 +326,9 @@ void GenAlgo::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, 
 
 void GenAlgo::parallelTask() {
     LOG(OSTREAM << "THREAD start" << std::endl;)
+    
+    OSTREAM << "Post constraints to GPU" << std::endl;
+    pushCstrToGPU(mCstrs.data(), mCstrs.size());
 
     OSTREAM << "Calling foo kernel" << std::endl;
     foo();
