@@ -170,13 +170,13 @@ SET(ALGORITHMS_SRCS
 )
 SET(CALLBACK_EXAMPLES_SRCS
     examples/baker.cpp
-    examples/nim-fibo.cpp
-    examples/rndQCSP.cpp
-    examples/qbf.cpp
-    examples/connect-four.cpp
-    examples/qdimacs.cpp
-    examples/matrix-game.cpp
-    examples/speeddating.cpp
+    #examples/nim-fibo.cpp
+    #examples/rndQCSP.cpp
+    #examples/qbf.cpp
+    #examples/connect-four.cpp
+    #examples/qdimacs.cpp
+    #examples/matrix-game.cpp
+    #examples/speeddating.cpp
 )
 
 SOURCE_GROUP("Hpp Files" REGULAR_EXPRESSION ".hpp")

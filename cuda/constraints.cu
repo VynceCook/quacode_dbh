@@ -8,7 +8,7 @@ CUDA_DEVICE uintptr_t * cstrData;
 CUDA_DEVICE uint32_t    cstrNb;
 
 CUDA_DEVICE cstrFuncPtr     cstrTable[64] = {
-        &cstrEQ,       NULL,          NULL,          NULL,
+        &cstrEq,       NULL,          NULL,          NULL,
         NULL,          NULL,          NULL,          NULL,
 
         &cstrAndNQ,    &cstrAndEQ,    &cstrAndLQ,    &cstrAndLE,

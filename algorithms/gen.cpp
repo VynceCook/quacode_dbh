@@ -31,6 +31,7 @@
 #include <ctime>
 #include <algorithms/gen.hh>
 #include <cuda/kernels.hh>
+#include <cuda/helper.hh>
 #define OSTREAM std::cerr
 #define MAX_VARS_IN_INTERVAL 24
 #define MUTATION_THRESHOLD 1.0
@@ -92,44 +93,44 @@ GenAlgo::~GenAlgo() {
 
 void GenAlgo::newVarCreated(int idx, Gecode::TQuantifier q, const std::string& name, TVarType t, int min, int max) {
     LOG(OSTREAM << "New var " << idx << "/" <<  printType(t) << " : " << name << ", type " << (q == EXISTS ? "E" : "F") << ", dom {" << min << "," << max << "}" <<std::endl;)
-    mVars.push_back({idx, q, name, t, min, max, min, max});
+        mVars.push_back({idx, q, name, t, min, max, min, max});
     ++mNbVars;
     ++mNbBinderVars;
 }
 
 void GenAlgo::newAuxVarCreated(const std::string& name, TVarType t, int min, int max) {
     LOG(OSTREAM << "New auxiliary var " << name << "/" << printType(t) << ", dom {" << min << "," << max << "}" << std::endl;)
-    mVars.push_back({-1, EXISTS, name, t, min, max, min, max});
+        mVars.push_back({-1, EXISTS, name, t, min, max, min, max});
     ++mNbVars;
 }
 
 void GenAlgo::newChoice(int iVar, int min, int max) {
     LOG(OSTREAM << "Chef ! We need to explore others choices : " << iVar << " {" << min << "," << max << "}" << std::endl;)
 
-    if (iVar < mLastChoice) {
-        restaureDomaines(iVar, mLastChoice);
-    }
+        if (iVar < mLastChoice) {
+            restaureDomaines(iVar, mLastChoice);
+        }
 
     mVars[iVar].curDom = {min, max};
     mLastChoice = iVar;
 
     LOG(
-    for(auto s : mVars) {
-        OSTREAM << "{" << s.curDom.min << "," << s.curDom.max << "}" << ", ";
-    }
-    OSTREAM << std::endl;)
+            for(auto s : mVars) {
+            OSTREAM << "{" << s.curDom.min << "," << s.curDom.max << "}" << ", ";
+            }
+            OSTREAM << std::endl;)
 }
 
 void GenAlgo::newPromisingScenario(const TScenario& scenario) {
     LOG(
-    OSTREAM << "Chef ! I think this scenario is interesting : ";
-    for (auto s: scenario) {
-        OSTREAM << "{" << s.min << "," << s.max << "}, ";
-    }
-    OSTREAM << std::endl;
-    )
+            OSTREAM << "Chef ! I think this scenario is interesting : ";
+            for (auto s: scenario) {
+            OSTREAM << "{" << s.min << "," << s.max << "}, ";
+            }
+            OSTREAM << std::endl;
+       )
 
-    if (scenario.size()) return;
+        if (scenario.size()) return;
 }
 
 void GenAlgo::strategyFound() {
@@ -147,15 +148,15 @@ void GenAlgo::globalFailure() {
 /// Function called when a new 'v0 == v2' constraint is posted
 void GenAlgo::postedEq(const std::string& v0, int val) {
     LOG(OSTREAM << "New constraint Eq " << v0 << "=" << val << std::endl;)
-    size_t v0Idx = findVar(v0);
+        size_t v0Idx = findVar(v0);
 
     if (v0Idx != (size_t)-1) {
         // Constraint * tmp = CstrEq::create(v0Idx, val);
         // mCstrs.push_back(tmp);
-	mCstrs.insert(mCstrs.end(), {
-				(CSTR_EQ_IDX << 3), v0Idx, val, NULL,
-				NULL, NULL, NULL, NULL
-				});
+        mCstrs.insert(mCstrs.end(), {
+                (CSTR_EQ_IDX << 3), v0Idx, val, NULL,
+                NULL, NULL, NULL, NULL
+                });
     }
     else {
         OSTREAM << "Can't find " << v0 << std::endl;
@@ -166,15 +167,15 @@ void GenAlgo::postedEq(const std::string& v0, int val) {
 /// Function called when a new 'p0v0 && p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
 void GenAlgo::postedAnd(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
     LOG(OSTREAM << "New constraint And " << p0 << ":" << v0 << " && " << p1 << ":" << v1 << " " << printComp(cmp) << " " << v2 << std::endl;)
-    size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
+        size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
         // Constraint * tmp = CstrBool::create(p0, v0Idx, OP_AND, p1, v1Idx, cmp, v2Idx);
         // mCstrs.push_back(tmp);
-	mCstrs.insert(mCstrs.end(), {
-				(CSTR_AND_IDX << 3) | cmp, p0, v0Idx, p1,
-				v1Idx, v2Idx, NULL, NULL
-				});
+        mCstrs.insert(mCstrs.end(), {
+                (CSTR_AND_IDX << 3) | cmp, p0, v0Idx, p1,
+                v1Idx, v2Idx, NULL, NULL
+                });
     }
     else {
         OSTREAM << "Can't find on of the variables " << v0 << ", " << v1 << ", " << v2 << std::endl;
@@ -185,15 +186,15 @@ void GenAlgo::postedAnd(bool p0, const std::string& v0, bool p1, const std::stri
 /// Function called when a new 'p0v0 || p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
 void GenAlgo::postedOr(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
     LOG(OSTREAM << "New constraint Or " << p0 << ":" << v0 << " || " << p1 << ":" << v1 << " " << printComp(cmp) << " " << v2 << std::endl;)
-    size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
+        size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
         // Constraint * tmp = CstrBool::create(p0, v0Idx, OP_OR, p1, v1Idx, cmp, v2Idx);
         // mCstrs.push_back(tmp);
-		mCstrs.insert(mCstrs.end(), {
-				(CSTR_OR_IDX << 3) | cmp, p0, v0Idx, p1,
-				v1Idx, v2Idx, NULL, NULL
-				});
+        mCstrs.insert(mCstrs.end(), {
+                (CSTR_OR_IDX << 3) | cmp, p0, v0Idx, p1,
+                v1Idx, v2Idx, NULL, NULL
+                });
     }
     else {
         OSTREAM << "Can't find on of the variables " << v0 << ", " << v1 << ", " << v2 << std::endl;
@@ -204,15 +205,15 @@ void GenAlgo::postedOr(bool p0, const std::string& v0, bool p1, const std::strin
 /// Function called when a new 'p0v0 >> p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
 void GenAlgo::postedImp(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
     LOG(OSTREAM << "New constraint Imp " << p0 << ":" << v0 << " >> " << p1 << ":" << v1 << " " << printComp(cmp) << " " << v2 << std::endl;)
-    size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
+        size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
         // Constraint * tmp = CstrBool::create(p0, v0Idx, OP_IMP, p1, v1Idx, cmp, v2Idx);
         // mCstrs.push_back(tmp);
-		mCstrs.insert(mCstrs.end(), {
-				(CSTR_IMP_IDX << 3) | cmp, p0, v0Idx, p1,
-				v1Idx, v2Idx, NULL, NULL
-				});
+        mCstrs.insert(mCstrs.end(), {
+                (CSTR_IMP_IDX << 3) | cmp, p0, v0Idx, p1,
+                v1Idx, v2Idx, NULL, NULL
+                });
     }
     else {
         OSTREAM << "Can't find on of the variables " << v0 << ", " << v1 << ", " << v2 << std::endl;
@@ -223,15 +224,15 @@ void GenAlgo::postedImp(bool p0, const std::string& v0, bool p1, const std::stri
 /// Function called when a new 'p0v0 ^ p1v1 <cmp> v2'  (p0, p1 are polarity of literals) constraint is posted
 void GenAlgo::postedXOr(bool p0, const std::string& v0, bool p1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
     LOG(OSTREAM << "New constraint Xor " << p0 << ":" << v0 << " ^ " << p1 << ":" << v1 << " " << printComp(cmp) << " " << v2 << std::endl;)
-    size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
+        size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
         // Constraint * tmp = CstrBool::create(p0, v0Idx, OP_XOR, p1, v1Idx, cmp, v2Idx);
         // mCstrs.push_back(tmp);
-		mCstrs.insert(mCstrs.end(), {
-				(CSTR_XOR_IDX << 3) | cmp, p0, v0Idx, p1,
-				v1Idx, v2Idx, NULL, NULL
-				});
+        mCstrs.insert(mCstrs.end(), {
+                (CSTR_XOR_IDX << 3) | cmp, p0, v0Idx, p1,
+                v1Idx, v2Idx, NULL, NULL
+                });
     }
     else {
         OSTREAM << "Can't find on of the variables " << v0 << ", " << v1 << ", " << v2 << std::endl;
@@ -243,15 +244,15 @@ void GenAlgo::postedXOr(bool p0, const std::string& v0, bool p1, const std::stri
 /// Function called when a new 'n0*v0 + n1*v1 <cmp> v2' constraint is posted
 void GenAlgo::postedPlus(int n0, const std::string& v0, int n1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
     LOG(OSTREAM << "New constraint Plus " << n0 << "*" << v0 << " + " << n1 << "*" << v1 << " " << printComp(cmp) << " " << v2 << std::endl;)
-    size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
+        size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
         // Constraint * tmp = CstrPlus::create(n0, v0Idx, n1, v1Idx, cmp, v2Idx);
         // mCstrs.push_back(tmp);
-		mCstrs.insert(mCstrs.end(), {
-				(CSTR_PLUS_IDX << 3) | cmp, n0, v0Idx, n1,
-				v1Idx, v2Idx, NULL, NULL
-				});
+        mCstrs.insert(mCstrs.end(), {
+                (CSTR_PLUS_IDX << 3) | cmp, n0, v0Idx, n1,
+                v1Idx, v2Idx, NULL, NULL
+                });
     }
     else {
         OSTREAM << "Can't find on of the variables " << v0 << ", " << v1 << ", " << v2 << std::endl;
@@ -262,15 +263,15 @@ void GenAlgo::postedPlus(int n0, const std::string& v0, int n1, const std::strin
 /// Function called when a new 'n*v0*v1 <cmp> v2' constraint is posted
 void GenAlgo::postedTimes(int n, const std::string& v0, const std::string& v1, TComparisonType cmp, const std::string& v2) {
     LOG(OSTREAM << "New constraint Times " << n << "*" << v0 << "*" << v1 << " " << printComp(cmp) << " " << v2 << std::endl;)
-    size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
+        size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
         // Constraint * tmp = CstrTimes::create(n, v0Idx, v1Idx, cmp, v2Idx);
         // mCstrs.push_back(tmp);
-		mCstrs.insert(mCstrs.end(), {
-				(CSTR_TIMES_IDX << 3) | cmp, n, v0Idx, v1Idx,
-				v2Idx, NULL, NULL, NULL
-				})
+        mCstrs.insert(mCstrs.end(), {
+                (CSTR_TIMES_IDX << 3) | cmp, n, v0Idx, v1Idx,
+                v2Idx, NULL, NULL, NULL
+                });
     }
     else {
         OSTREAM << "Can't find on of the variables " << v0 << ", " << v1 << ", " << v2 << std::endl;
@@ -281,18 +282,18 @@ void GenAlgo::postedTimes(int n, const std::string& v0, const std::string& v1, T
 /// Function called when a new 'SUM_i n_i*v_i <cmp> v0' constraint is posted
 void GenAlgo::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, const std::string& v0) {
     LOG(
-    OSTREAM << "New constraint Linear ";
-    for (auto m : poly) {
-        OSTREAM << m.coeff << "*" << m.varName << " + ";
-    }
-    OSTREAM << printComp(cmp) << " " << v0 << std::endl;
-    )
+            OSTREAM << "New constraint Linear ";
+            for (auto m : poly) {
+            OSTREAM << m.coeff << "*" << m.varName << " + ";
+            }
+            OSTREAM << printComp(cmp) << " " << v0 << std::endl;
+       )
 
-    size_t v0Idx = findVar(v0);
+        size_t v0Idx = findVar(v0);
 
     if (v0Idx != (size_t)-1) {
         size_t * h_polyCpy = new size_t[poly.size() * 2], * h_polyCpyStart = h_polyCpy;
-		size_t * d_polyCpy; // On the GPU
+        size_t * d_polyCpy; // On the GPU
 
         for (auto it = poly.begin(); it != poly.end(); ++it) {
             size_t viIdx = findVar(it->varName);
@@ -308,10 +309,14 @@ void GenAlgo::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, 
         }
         // Constraint * tmp = CstrLinear::create(polyCpy2, poly.size(), cmp, v0Idx);
         // mCstrs.push_back(tmp);
-	//
-	// TODO Transfert array to GPU
-	d_polyCpy = pushPolyToGPU(h_polyCpyStart, poly.size() * 2);	
-        mCstrs.insert(mCstrs.end(), {(CSTR_LINEAR_IDX << 3) | cmp, (size_t)d_polyCpy, poly.size(), v0Idx, NULL, NULL, NULL, NULL);
+        //
+        // TODO Transfert array to GPU
+        d_polyCpy = pushPolyToGPU(h_polyCpyStart, poly.size() * 2);
+
+        mCstrs.insert(mCstrs.end(), {
+                        (CSTR_LINEAR_IDX << 3) | cmp, (size_t)d_polyCpy, poly.size(), v0Idx,
+                        NULL, NULL, NULL, NULL
+                        });
         delete[] h_polyCpyStart;
     }
     else {
