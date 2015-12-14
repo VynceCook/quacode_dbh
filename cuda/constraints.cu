@@ -1,5 +1,6 @@
 #include <cuda/constraints.hh>
 #include <cuda/kernels.hh>
+#include <cuda/helper.hh>
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
