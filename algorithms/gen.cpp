@@ -150,8 +150,8 @@ void GenAlgo::postedEq(const std::string& v0, int val) {
     size_t v0Idx = findVar(v0);
 
     if (v0Idx != (size_t)-1) {
-        Constraint * tmp = CstrEq::create(v0Idx, val);
-        mCstrs.push_back(tmp);
+        // Constraint * tmp = CstrEq::create(v0Idx, val);
+        // mCstrs.push_back(tmp);
     }
     else {
         OSTREAM << "Can't find " << v0 << std::endl;
@@ -319,7 +319,7 @@ size_t GenAlgo::findVar(const std::string & name) {
 }
 
 bool GenAlgo::evaluate(const std::vector<int> &vars) {
-    return Constraint::evaluate(mCstrs.data(), mCstrs.size(), vars.data());
+    // return Constraint::evaluate(mCstrs.data(), mCstrs.size(), vars.data());
 }
 
 /*
