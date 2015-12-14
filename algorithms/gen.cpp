@@ -150,7 +150,10 @@ void GenAlgo::postedEq(const std::string& v0, int val) {
     size_t v0Idx = findVar(v0);
 
     if (v0Idx != (size_t)-1) {
-		mCstrs.insert(mCstrs.end(), {(CSTR_EQ_IDX << 3), v0Idx, val});
+		mCstrs.insert(mCstrs.end(), {
+				(CSTR_EQ_IDX << 3), v0Idx, val, NULL,
+				NULL, NULL, NULL, NULL
+				});
     }
     else {
         OSTREAM << "Can't find " << v0 << std::endl;
@@ -166,7 +169,10 @@ void GenAlgo::postedAnd(bool p0, const std::string& v0, bool p1, const std::stri
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
         // Constraint * tmp = CstrBool::create(p0, v0Idx, OP_AND, p1, v1Idx, cmp, v2Idx);
         // mCstrs.push_back(tmp);
-		mCstrs.insert(mCstrs.end(), {(CSTR_AND_IDX << 3) | cmp), p0, v0Idx, p1, v1Idx, v2Idx});
+		mCstrs.insert(mCstrs.end(), {
+				(CSTR_AND_IDX << 3) | cmp, p0, v0Idx, p1,
+				v1Idx, v2Idx, NULL, NULL
+				});
     }
     else {
         OSTREAM << "Can't find on of the variables " << v0 << ", " << v1 << ", " << v2 << std::endl;
@@ -182,7 +188,10 @@ void GenAlgo::postedOr(bool p0, const std::string& v0, bool p1, const std::strin
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
         // Constraint * tmp = CstrBool::create(p0, v0Idx, OP_OR, p1, v1Idx, cmp, v2Idx);
         // mCstrs.push_back(tmp);
-		mCstrs.insert(mCstrs.end(), {(CSTR_OR_IDX << 3) | cmp, p0, v0Idx, p1, v1Idx, v2Idx});
+		mCstrs.insert(mCstrs.end(), {
+				(CSTR_OR_IDX << 3) | cmp, p0, v0Idx, p1,
+				v1Idx, v2Idx, NULL, NULL
+				});
     }
     else {
         OSTREAM << "Can't find on of the variables " << v0 << ", " << v1 << ", " << v2 << std::endl;
@@ -198,7 +207,10 @@ void GenAlgo::postedImp(bool p0, const std::string& v0, bool p1, const std::stri
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
         // Constraint * tmp = CstrBool::create(p0, v0Idx, OP_IMP, p1, v1Idx, cmp, v2Idx);
         // mCstrs.push_back(tmp);
-		mCstrs.insert(mCstrs.end(), {(CSTR_IMP_IDX << 3) | cmp, p0, v0Idx, p1, v1Idx, v2Idx});
+		mCstrs.insert(mCstrs.end(), {
+				(CSTR_IMP_IDX << 3) | cmp, p0, v0Idx, p1,
+				v1Idx, v2Idx, NULL, NULL
+				});
     }
     else {
         OSTREAM << "Can't find on of the variables " << v0 << ", " << v1 << ", " << v2 << std::endl;
@@ -214,7 +226,10 @@ void GenAlgo::postedXOr(bool p0, const std::string& v0, bool p1, const std::stri
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
         // Constraint * tmp = CstrBool::create(p0, v0Idx, OP_XOR, p1, v1Idx, cmp, v2Idx);
         // mCstrs.push_back(tmp);
-		mCstrs.insert(mCstrs.end(), {(CSTR_XOR_IDX << 3) | cmp, p0, v0Idx, p1, v1Idx, v2Idx});
+		mCstrs.insert(mCstrs.end(), {
+				(CSTR_XOR_IDX << 3) | cmp, p0, v0Idx, p1,
+				v1Idx, v2Idx, NULL, NULL
+				});
     }
     else {
         OSTREAM << "Can't find on of the variables " << v0 << ", " << v1 << ", " << v2 << std::endl;
@@ -231,7 +246,10 @@ void GenAlgo::postedPlus(int n0, const std::string& v0, int n1, const std::strin
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
         // Constraint * tmp = CstrPlus::create(n0, v0Idx, n1, v1Idx, cmp, v2Idx);
         // mCstrs.push_back(tmp);
-		mCstrs.insert(mCstrs.end(), {(CSTR_PLUS_IDX << 3) | cmp, n0, v0Idx, n1, v1Idx, v2Idx});
+		mCstrs.insert(mCstrs.end(), {
+				(CSTR_PLUS_IDX << 3) | cmp, n0, v0Idx, n1,
+				v1Idx, v2Idx, NULL, NULL
+				});
     }
     else {
         OSTREAM << "Can't find on of the variables " << v0 << ", " << v1 << ", " << v2 << std::endl;
@@ -247,7 +265,10 @@ void GenAlgo::postedTimes(int n, const std::string& v0, const std::string& v1, T
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
         // Constraint * tmp = CstrTimes::create(n, v0Idx, v1Idx, cmp, v2Idx);
         // mCstrs.push_back(tmp);
-		mCstrs.insert(mCstrs.end(), {(CSTR_TIMES_IDX << 3) | cmp, n, v0Idx, v1Idx, v2Idx})
+		mCstrs.insert(mCstrs.end(), {
+				(CSTR_TIMES_IDX << 3) | cmp, n, v0Idx, v1Idx,
+				v2Idx, NULL, NULL, NULL
+				})
     }
     else {
         OSTREAM << "Can't find on of the variables " << v0 << ", " << v1 << ", " << v2 << std::endl;
@@ -289,7 +310,10 @@ void GenAlgo::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, 
 		// TODO Transfert array to GPU
 		cudaMalloc(d_polyCpy, poly.size() * sizeof(size_t));
 		cudaMemcpy(d_polyCpy, h_polyCpyStart, poly.size() * sizeof(size_t), cudaHostToDevice);
-		mCstrs.insert(mCstrs.end(), {(CSTR_LINEAR_IDX << 3) | cmp, d_polyCpy, poly.size(), v0Idx);
+		mCstrs.insert(mCstrs.end(), {
+				(CSTR_LINEAR_IDX << 3) | cmp, d_polyCpy, poly.size(), v0Idx,
+				NULL, NULL, NULL, NULL
+				});
         delete[] polyCpy2;
     }
     else {
