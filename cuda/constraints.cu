@@ -15,7 +15,11 @@
 #define CSTR_VAL_256X   CSTR_VAL_128X, CSTR_VAL_128X
 #define CSTR_VAL_512X   CSTR_VAL_256X, CSTR_VAL_256X
 
-CUDA_DEVICE __constant__ uintptr_t cstrData[1024] = {CSTR_VAL_512X, CSTR_VAL_512X};
+#define CSTR_DOM_SIZE   512
+#define CSTR_DATA_SIZE  1024
+
+CUDA_DEVICE __constant__ uintptr_t  cstrData[CSTR_DATA_SIZE] = {CSTR_VAL_512X, CSTR_VAL_512X};
+CUDA_DEVICE __constant__ int        cstrDom[CSTR_DOM_SIZE];
 
 CUDA_DEVICE cstrFuncPtr     cstrTable[64] = {
         &cstrEq,       NULL,          NULL,          NULL,
@@ -43,12 +47,18 @@ CUDA_DEVICE cstrFuncPtr     cstrTable[64] = {
         &cstrLinearGQ, &cstrLinearGR, NULL,          NULL
 };
 
+CUDA_HOST void pushDomtoGPU(int * dom, size_t size) {
+    assert(size < CSTR_DOM_SIZE);
+    CCR(cudaMemcpyToSymbol(cstrDom, dom, size * sizeof(int)));
+}
+
 CUDA_HOST void pushCstrToGPU(uintptr_t * cstrs, size_t size) {
+    assert(size < CSTR_DATA_SIZE);
     CCR(cudaMemcpyToSymbol(cstrData, cstrs, size * sizeof(uintptr_t)));
 }
 
 CUDA_DEVICE bool cstrValidate(int * c) {
-    for (size_t i = 0; cstrData[8 * i] != CSTR_NO; ++i) {
+    for (size_t i = 0; cstrData[8 * i] != CSTR_NO && (8 * i) < CSTR_DATA_SIZE; ++i) {
         if (!cstrTable[cstrData[8 * i]](cstrData + (8 * i) + 1, c)) {
             return false;
         }

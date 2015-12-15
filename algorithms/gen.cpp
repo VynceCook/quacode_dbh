@@ -168,8 +168,6 @@ void GenAlgo::postedAnd(bool p0, const std::string& v0, bool p1, const std::stri
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
-        // Constraint * tmp = CstrBool::create(p0, v0Idx, OP_AND, p1, v1Idx, cmp, v2Idx);
-        // mCstrs.push_back(tmp);
         mCstrs.insert(mCstrs.end(), {
                 (CSTR_AND_IDX << 3) | cmp, p0, v0Idx, p1,
                 v1Idx, v2Idx, NULL, NULL
@@ -187,8 +185,6 @@ void GenAlgo::postedOr(bool p0, const std::string& v0, bool p1, const std::strin
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
-        // Constraint * tmp = CstrBool::create(p0, v0Idx, OP_OR, p1, v1Idx, cmp, v2Idx);
-        // mCstrs.push_back(tmp);
         mCstrs.insert(mCstrs.end(), {
                 (CSTR_OR_IDX << 3) | cmp, p0, v0Idx, p1,
                 v1Idx, v2Idx, NULL, NULL
@@ -206,8 +202,6 @@ void GenAlgo::postedImp(bool p0, const std::string& v0, bool p1, const std::stri
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
-        // Constraint * tmp = CstrBool::create(p0, v0Idx, OP_IMP, p1, v1Idx, cmp, v2Idx);
-        // mCstrs.push_back(tmp);
         mCstrs.insert(mCstrs.end(), {
                 (CSTR_IMP_IDX << 3) | cmp, p0, v0Idx, p1,
                 v1Idx, v2Idx, NULL, NULL
@@ -225,8 +219,6 @@ void GenAlgo::postedXOr(bool p0, const std::string& v0, bool p1, const std::stri
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
-        // Constraint * tmp = CstrBool::create(p0, v0Idx, OP_XOR, p1, v1Idx, cmp, v2Idx);
-        // mCstrs.push_back(tmp);
         mCstrs.insert(mCstrs.end(), {
                 (CSTR_XOR_IDX << 3) | cmp, p0, v0Idx, p1,
                 v1Idx, v2Idx, NULL, NULL
@@ -245,8 +237,6 @@ void GenAlgo::postedPlus(int n0, const std::string& v0, int n1, const std::strin
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
-        // Constraint * tmp = CstrPlus::create(n0, v0Idx, n1, v1Idx, cmp, v2Idx);
-        // mCstrs.push_back(tmp);
         mCstrs.insert(mCstrs.end(), {
                 (CSTR_PLUS_IDX << 3) | cmp, int2uint(n0), v0Idx, int2uint(n1),
                 v1Idx, v2Idx, NULL, NULL
@@ -264,8 +254,6 @@ void GenAlgo::postedTimes(int n, const std::string& v0, const std::string& v1, T
     size_t v0Idx = findVar(v0), v1Idx = findVar(v1), v2Idx = findVar(v2);
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
-        // Constraint * tmp = CstrTimes::create(n, v0Idx, v1Idx, cmp, v2Idx);
-        // mCstrs.push_back(tmp);
         mCstrs.insert(mCstrs.end(), {
                 (CSTR_TIMES_IDX << 3) | cmp, int2uint(n), v0Idx, v1Idx,
                 v2Idx, NULL, NULL, NULL
@@ -305,10 +293,6 @@ void GenAlgo::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, 
                 GECODE_NEVER
             }
         }
-        // Constraint * tmp = CstrLinear::create(polyCpy2, poly.size(), cmp, v0Idx);
-        // mCstrs.push_back(tmp);
-        //
-        // TODO Transfert array to GPU
         d_polyCpy = pushPolyToGPU(h_polyCpyStart, poly.size() * 2);
 
         mCstrs.insert(mCstrs.end(), {
@@ -326,7 +310,7 @@ void GenAlgo::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, 
 
 void GenAlgo::parallelTask() {
     LOG(OSTREAM << "THREAD start" << std::endl;)
-    
+
     OSTREAM << "Post constraints to GPU" << std::endl;
     pushCstrToGPU(mCstrs.data(), mCstrs.size());
 

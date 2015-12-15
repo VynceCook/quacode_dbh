@@ -39,6 +39,7 @@ typedef bool (*cstrFuncPtr)(uintptr_t *, int *);
             } while(0)
 
 
+CUDA_HOST   void pushDomtoGPU(int * dom, size_t size);
 CUDA_HOST   void pushCstrToGPU(uintptr_t * cstrs, size_t size);
 
 CUDA_DEVICE bool cstrValidate(int * c);
