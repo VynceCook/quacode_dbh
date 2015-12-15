@@ -5,15 +5,6 @@ typedef union {
     unsigned int b;
 } intuint_u;
 
-size_t * pushPolyToGPU(size_t * poly, size_t size) {
-    size_t * ret;
-
-    CCR(cudaMalloc((void**)&ret, size * sizeof(size_t)));
-    CCR(cudaMemcpy(ret, poly, size * sizeof(size_t), cudaMemcpyHostToDevice));
-
-    return ret;
-}
-
 CUDA_DEVICE CUDA_HOST unsigned int int2uint(int i) {
     intuint_u tmp;
     tmp.a = i;

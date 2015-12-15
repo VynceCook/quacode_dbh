@@ -283,7 +283,7 @@ void GenAlgo::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, 
 
     if (v0Idx != (size_t)-1) {
         size_t * h_polyCpy = new size_t[poly.size() * 2], * h_polyCpyStart = h_polyCpy;
-        size_t * d_polyCpy; // On the GPU
+        size_t d_polyCpy; // On the GPU
 
         for (auto it = poly.begin(); it != poly.end(); ++it) {
             size_t viIdx = findVar(it->varName);
@@ -300,7 +300,7 @@ void GenAlgo::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, 
         d_polyCpy = pushPolyToGPU(h_polyCpyStart, poly.size() * 2);
 
         mCstrs.insert(mCstrs.end(), {
-                        (CSTR_LINEAR_IDX << 3) | cmp, (size_t)d_polyCpy, poly.size(), v0Idx,
+                        (CSTR_LINEAR_IDX << 3) | cmp, d_polyCpy, poly.size(), v0Idx,
                         NULL, NULL, NULL, NULL
                         });
         delete[] h_polyCpyStart;

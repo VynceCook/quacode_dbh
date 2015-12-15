@@ -20,6 +20,8 @@ CUDA_DEVICE __constant__ uintptr_t  cstrData[CSTR_MAX_CSTR * 8] = {CSTR_VAL_512X
 CUDA_DEVICE __constant__ TVarType   cstrType[CSTR_MAX_VAR];
 CUDA_DEVICE __constant__ Gecode::TQuantifier cstrQuan[CSTR_MAX_VAR];
 CUDA_DEVICE __constant__ int        cstrDom[CSTR_MAX_VAR];
+CUDA_DEVICE __constant__ size_t     cstrPoly[CSTR_MAX_POLY];
+                         size_t     cstrPolyNext = 0;
 
 CUDA_DEVICE cstrFuncPtr     cstrTable[64] = {
         &cstrEq,       NULL,          NULL,          NULL,
@@ -46,6 +48,16 @@ CUDA_DEVICE cstrFuncPtr     cstrTable[64] = {
         &cstrLinearNQ, &cstrLinearEQ, &cstrLinearLQ, &cstrLinearLE,
         &cstrLinearGQ, &cstrLinearGR, NULL,          NULL
 };
+
+CUDA_HOST   size_t pushPolyToGPU(size_t * poly, size_t size) {
+    size_t next = cstrPolyNext;
+    assert(next + 2 * size < CSTR_MAX_POLY);
+
+    CCR(cudaMemcpyToSymbol(cstrPoly, poly, size * sizeof(size_t), next * sizeof(size_t)));
+    cstrPolyNext += 2 * size;
+
+    return next;
+}
 
 CUDA_HOST   void pushVarToGPU(TVarType * type, Gecode::TQuantifier * quant, size_t size) {
     assert(size < CSTR_MAX_VAR);
@@ -333,8 +345,9 @@ CUDA_DEVICE bool cstrTimesLE(uintptr_t * data, int * c) {
 }
 
 CUDA_DEVICE bool cstrLinearEQ(uintptr_t * data, int * c) {
-    size_t * v = (size_t*) data[0], size = (size_t) data[1];
+    size_t vIdx = (size_t) data[0], size = (size_t) data[1];
     size_t v0 = (size_t) data[2];
+    size_t *v = cstrPoly + vIdx;
     int sum = 0;
 
     opLinear(v, size, sum);
