@@ -66,9 +66,25 @@ std::string printType(TVarType t) {
 #define LOG(__s) /* void */
 #endif
 
+void GenAlgo::VarDescArray::push_back(const GenAlgo::VarDesc & v) {
+    assert(next < GEN_MAX_VAR);
+
+    idxInBinder[next] = v.idxInBinder;
+    q[next] = v.q;
+    name[next] = v.name;
+    type[next] = v.type;
+    dom[2 * next] = v.dom.min;
+    dom[2 * next + 1] = v.dom.max;
+    curDom[2 * next] = v.curDom.min;
+    curDom[2 * next + 1] = v.curDom.max;
+
+    ++next;
+}
+
 void GenAlgo::restaureDomaines(int from, int to) {
     for (int i = from + 1; i <= to; ++i) {
-        mVars[i].curDom = mVars[i].dom;
+        mVars.curDom[2 * i] = mVars.dom[2 * i];
+        mVars.curDom[2 * i + 1] = mVars.dom[2 * i + 1];
     }
 }
 
@@ -105,14 +121,9 @@ void GenAlgo::newChoice(int iVar, int min, int max) {
         restaureDomaines(iVar, mLastChoice);
     }
 
-    mVars[iVar].curDom = {min, max};
+    mVars.curDom[iVar * 2] = min;
+    mVars.curDom[iVar * 2 + 1] = max;
     mLastChoice = iVar;
-
-    LOG(
-    for(auto s : mVars) {
-        OSTREAM << "{" << s.curDom.min << "," << s.curDom.max << "}" << ", ";
-    }
-    OSTREAM << std::endl;)
 }
 
 void GenAlgo::newPromisingScenario(const TScenario& scenario) {
@@ -307,16 +318,10 @@ void GenAlgo::parallelTask() {
 
     LOG(OSTREAM << "THREAD start" << std::endl;)
 
-    OSTREAM << "Post constraints to GPU" << std::endl;
+    OSTREAM << "Post constraints and variables to GPU" << std::endl;
     pushCstrToGPU(mCstrs.data(), mCstrs.size());
-
-    for (auto it = mVars.begin(); it != mVars.end(); ++it) {
-        tmpTypes.push_back(it->type);
-        tmpQuan.push_back(it->q);
-    }
-
-    pushVarToGPU(tmpTypes.data(), tmpQuan.data(), mVars.size());
-    sendDomToGPU();
+    pushVarToGPU(mVars.type, mVars.q, mVars.next);
+    pushDomToGPU(mVars.curDom, mVars.next * 2);
 
     OSTREAM << "Calling foo kernel" << std::endl;
     foo();
@@ -336,8 +341,8 @@ void GenAlgo::parallelTask() {
 
 
 size_t GenAlgo::findVar(const std::string & name) {
-    for (size_t i = 0; i < mVars.size(); ++i) {
-        if (mVars[i].name == name) {
+    for (size_t i = 0; i < mVars.next; ++i) {
+        if (mVars.name[i] == name) {
             return i;
         }
     }
@@ -345,215 +350,9 @@ size_t GenAlgo::findVar(const std::string & name) {
     return -1;
 }
 
-void GenAlgo::sendDomToGPU() {
-    static int* dom = nullptr;
-
-    if (!dom) dom = new int[mVars.size() * 2];
-
-    for (size_t i = 0; i < mVars.size(); ++i) {
-        dom[2 * i] = mVars[i].curDom.min;
-        dom[2 * i + 1] = mVars[i].curDom.max;
-    }
-
-    pushDomToGPU(dom, mVars.size() * 2);
-}
-
 bool GenAlgo::evaluate(const std::vector<int> &vars) {
     // return Constraint::evaluate(mCstrs.data(), mCstrs.size(), vars.data());
     return(true);
-}
-
-/*
-// Seems useless, will be updated if needed
-
-std::vector<int *> GenAlgo::generateAll() {
-	std::vector<int *> res;
-	int cur[mNbVars];
-	int i;
-
-	// Initializes all at minimal value
-	for (i=0; i<mNbVars; ++i) {
-		cur[i] = mVars[i].dom.min;
-	}
-	if (evaluate(cur)) {
-		int * newArray = new int[mVars];
-		memcpy(newArray, cur, mNbVars * sizeof(int));
-		res.push_back(newArray);
-	}
-
-	// "Increases" the candidate
-	while (1) {
-		for (i=0; cur[i] == mVars[i].dom.max && i < mNbVars; ++i) {
-			cur[i] = mVars[i].dom.min;
-		}
-
-		if (i == mNbVars) {
-			// We generated all the possible var sets
-			break;
-		}
-		cur[i] ++;
-
-		if (evaluate(cur)) {
-			int * newArray = new int[mVars];
-			memcpy(newArray, cur, mNbVars * sizeof(int));
-			res.push_back(newArray);
-		}
-	}
-
-	return(res);
-}
-
-
-std::vector<std::vector<int>> GenAlgo::generateRandom(const int n) {
-	std::vector<std::vector<int>> res(n);
-
-	srand(time(NULL));
-
-	// generates random sets of var (useful in genetic algo's initialisation)
-	for (int i=0; i<n; ++i) {
-		res[i] = std::vector<int>(mNbVars);
-		for (int j=0; j<mNbVars; ++j) {
-			res[i][j] = mVars[j].dom.min + (rand() % (mVars[j].dom.max - mVars[j].dom.min));
-		}
-	}
-
-	return(res);
-}
-*/
-
-void GenAlgo::execute(const int maxGen, const int popSize) {
-	Interval **curGen;  // the current population, will be used as parents
-	Interval **nextGen; // the next generation, will contain the children
-	int range[popSize];
-	int prevRange;
-	float randP1, randP2;
-	int parent1, parent2;
-
-	curGen  = (Interval **)malloc(popSize * sizeof(Interval *));
-	nextGen = (Interval **)malloc(popSize * sizeof(Interval *));
-	for (int i=0; i<popSize; ++i){
-		curGen[i]  = (Interval *)malloc(mNbVars * sizeof(Interval));
-		nextGen[i] = (Interval *)malloc(mNbVars * sizeof(Interval));
-	}
-
-	// Candidates generation
-	generateRandomPop(popSize, curGen);
-
-	// for n gen
-	for (int nGen=0; nGen<maxGen; ++nGen){
-		prevRange = 0;
-		// Candidates evaluation
-		for (int i=0; i<popSize; ++i){
-			range[i] = prevRange + evaluateIntervals(curGen[i]);
-			prevRange += range[i];
-		}
-
-		// For each individual in the next generation...
-		for (int i=0; i<popSize; ++i){
-			// Breeding
-			randP1 = randFloat(range[popSize - 1]);
-			randP2 = randFloat(range[popSize - 1]);
-			int j;
-			for (j=0; randP1 > range[j]; ++j);
-			parent1 = j;
-			for (j=0; randP2 > range[j]; ++j);
-			parent2 = j;
-			crossover(curGen, nextGen, parent1, parent2, i);
-
-			// Mutation
-			if (randFloat(100) < MUTATION_THRESHOLD){
-				mutate(nextGen, i);
-			}
-		}
-
-		curGen = nextGen;
-	}
-
-	for (int i=0; i<popSize; ++i){
-		free(curGen[i]);
-		free(nextGen[i]);
-	}
-	free(curGen);
-	free(nextGen);
-
-}
-
-
-void GenAlgo::generateRandomPop(const int size, Interval ** population){
-	// Generate the base population
-	for (int p=0; p<size; ++p){
-		for (int i=0; i<mNbVars; ++i){
-			population[p][i].min = mVars[i].dom.min + (rand() % (mVars[i].dom.max - mVars[i].dom.min));
-			population[p][i].max = population[p][i].min + (rand() % (mVars[i].dom.max - population[p][i].min));
-		}
-	}
-}
-
-
-float GenAlgo::evaluateIntervals(const Interval * interVars) {
-	// Evaluate an array of mNbVars intervals
-	// Calculates the average of all the candidates' evaluations in the defined intervals
-	int sum;
-	int num = 1; // number of candidates in the intervals, at least 1
-	std::vector <int> cur(mNbVars);
-//	int cur[mNbVars];
-	int i;
-
-	// Initialize all to the minimal values
-	for (i=0; i<mNbVars; ++i) {
-		cur[mNbVars] = interVars[i].min;
-	}
-
-	sum = evaluate(cur);
-
-	while (1) {
-		// "Increase" the candidate
-		for (i=0; cur[i] == interVars[i].max && i<mNbVars; ++i) {
-			cur[i] = interVars[i].min;
-		}
-
-		if (i == mNbVars){
-			break;
-		}
-		cur[i] ++;
-		num ++;
-
-		// Avoid some candidates with too many possibilities (would take too long)
-		if (num > MAX_VARS_IN_INTERVAL)
-			return(0);
-
-		sum += evaluate(cur);
-	}
-
-	return(sum / num);
-}
-
-
-void GenAlgo::crossover(Interval ** parents, Interval ** children, int p1, int p2, int c){
-	// Simple crossover
-	int crossoverPoint = 1 + rand() % (mNbVars - 2);
-	int i;
-
-	for (i=0; i<crossoverPoint; ++i){
-		children[c][i] = parents[p1][i];
-	}
-	for (; i<mNbVars; ++i){
-		children[c][i] = parents[p2][i];
-	}
-}
-
-
-void GenAlgo::mutate(Interval ** population, int p){
-	// Randomly changes an interval in an individual
-	int i = rand() % mNbVars;
-
-	population[p][i].min = mVars[i].dom.min + (rand() % (mVars[i].dom.max - mVars[i].dom.min));
-	population[p][i].max = population[p][i].min + (rand() % (mVars[i].dom.max - population[p][i].min));
-}
-
-
-float GenAlgo::randFloat(float max){
-	return((float)rand()/(float)(RAND_MAX/max));
 }
 
 #endif
