@@ -38,7 +38,7 @@
 #include <gecode/support.hh>
 #include <gecode/int.hh>
 #include <quacode/qcsp.hh>
-#include <quacode/asyncalgotypes.hh>
+#include <quacode/quacodetypes.hh>
 
 // Forward declaration
 namespace Gecode { namespace Int { namespace Branch {

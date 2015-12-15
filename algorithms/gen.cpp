@@ -81,12 +81,6 @@ GenAlgo::GenAlgo() : AsyncAlgo() {
 GenAlgo::~GenAlgo() {
     mbQuacodeThreadFinished = true;
 
-#ifndef QUACODE_USE_CUDA
-    for (auto it = mCstrs.begin(); it != mCstrs.end(); ++it) {
-        delete *it;
-    }
-#endif
-
     mDestructor.acquire();
     mDestructor.release();
 }
@@ -230,7 +224,6 @@ void GenAlgo::postedXOr(bool p0, const std::string& v0, bool p1, const std::stri
     }
 }
 
-
 /// Function called when a new 'n0*v0 + n1*v1 <cmp> v2' constraint is posted
 void GenAlgo::postedPlus(int n0, const std::string& v0, int n1, const std::string& v1, TComparisonType cmp, const std::string& v2) {
     LOG(OSTREAM << "New constraint Plus " << n0 << "*" << v0 << " + " << n1 << "*" << v1 << " " << printComp(cmp) << " " << v2 << std::endl;)
@@ -309,10 +302,21 @@ void GenAlgo::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, 
 
 
 void GenAlgo::parallelTask() {
+    std::vector<TVarType>               tmpTypes;
+    std::vector<Gecode::TQuantifier>    tmpQuan;
+
     LOG(OSTREAM << "THREAD start" << std::endl;)
 
     OSTREAM << "Post constraints to GPU" << std::endl;
     pushCstrToGPU(mCstrs.data(), mCstrs.size());
+
+    for (auto it = mVars.begin(); it != mVars.end(); ++it) {
+        tmpTypes.push_back(it->type);
+        tmpQuan.push_back(it->q);
+    }
+
+    pushVarToGPU(tmpTypes.data(), tmpQuan.data(), mVars.size());
+    sendDomToGPU();
 
     OSTREAM << "Calling foo kernel" << std::endl;
     foo();
@@ -339,6 +343,19 @@ size_t GenAlgo::findVar(const std::string & name) {
     }
 
     return -1;
+}
+
+void GenAlgo::sendDomToGPU() {
+    static int* dom = nullptr;
+
+    if (!dom) dom = new int[mVars.size() * 2];
+
+    for (size_t i = 0; i < mVars.size(); ++i) {
+        dom[2 * i] = mVars[i].curDom.min;
+        dom[2 * i + 1] = mVars[i].curDom.max;
+    }
+
+    pushDomToGPU(dom, mVars.size() * 2);
 }
 
 bool GenAlgo::evaluate(const std::vector<int> &vars) {

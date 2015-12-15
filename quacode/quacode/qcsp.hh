@@ -62,12 +62,7 @@
 
 #endif
 
-namespace Gecode {
-  #define EXISTS 0
-  #define FORALL 1
-  typedef unsigned int TQuantifier;
-}
-
+#include <quacode/quacodetypes.hh>
 #include <gecode/int.hh>
 
 namespace Gecode {
@@ -189,7 +184,7 @@ namespace Gecode {
     QuantArgs(int n, const TQuantifier* e)  : PrimArgArray<TQuantifier>(n, e) {}
     /// Initialize from primitive argument array \a a (copy elements)
     QuantArgs(const PrimArgArray<TQuantifier>& a) : PrimArgArray<TQuantifier>(a) {}
-    //@}    
+    //@}
   };
 
   /** \brief Post domain consistent propagator for Quantified Boolean operation on \a x0 and \a x1

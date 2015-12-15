@@ -118,6 +118,7 @@ public:
 
 private:
     size_t      findVar(const std::string & name);
+    void        sendDomToGPU();
     bool        evaluate(const std::vector<int> & vars);
 	/*
 	std::vector<std::vector<int>> generateAll();

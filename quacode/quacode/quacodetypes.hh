@@ -15,4 +15,10 @@ typedef unsigned int TVarType;
 // Information on comparison operator
 typedef unsigned int TComparisonType;
 
+namespace Gecode {
+  #define EXISTS 0
+  #define FORALL 1
+  typedef unsigned int TQuantifier;
+}
+
 #endif

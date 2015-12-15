@@ -1,7 +1,7 @@
 #ifndef __CONSTRAINTS_H_
 #define __CONSTRAINTS_H_
 
-#include <quacode/asyncalgotypes.hh>
+#include <quacode/quacodetypes.hh>
 #include <cuda/cuda.hh>
 #include <cstddef>
 #include <stdint.h>
@@ -9,6 +9,8 @@
 typedef bool (*cstrFuncPtr)(uintptr_t *, int *);
 
 #define CSTR_NO         INTMAX_MAX
+#define CSTR_MAX_VAR    512
+#define CSTR_MAX_CSTR   128
 
 #define CSTR_EQ_IDX     0x0
 #define CSTR_AND_IDX    0x1
@@ -38,8 +40,8 @@ typedef bool (*cstrFuncPtr)(uintptr_t *, int *);
                 }                                                               \
             } while(0)
 
-
-CUDA_HOST   void pushDomtoGPU(int * dom, size_t size);
+CUDA_HOST   void pushVarToGPU(TVarType * type, Gecode::TQuantifier * quant, size_t size);
+CUDA_HOST   void pushDomToGPU(int * dom, size_t size);
 CUDA_HOST   void pushCstrToGPU(uintptr_t * cstrs, size_t size);
 
 CUDA_DEVICE bool cstrValidate(int * c);
