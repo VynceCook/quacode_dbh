@@ -75,6 +75,38 @@ CUDA_HOST void pushCstrToGPU(uintptr_t * cstrs, size_t size) {
     CCR(cudaMemcpyToSymbol(cstrData, cstrs, size * sizeof(uintptr_t)));
 }
 
+CUDA_HOST   int *   initPopulation(size_t size) {
+        int * d_tmp, *h_tmp;
+
+        CCR(cudaMalloc((void**)&d_tmp, sizeof(int *)));
+
+        initPopulationKernel<<<1, 1>>>(&d_tmp, size);
+
+        CCR(cudaGetLastError());
+        CCR(cudaMemcpy(&d_tmp, &h_tmp, sizeof(int *), cudaMemcpyDeviceToHost));
+
+        return h_tmp;
+}
+
+CUDA_HOST   void    doTheMagic(int * pop, size_t size, size_t gen) {
+    dim3 grid, block;
+
+    doTheMagicKernel<<<grid, block>>>(pop, size, gen);
+    CCR(cudaGetLastError());
+}
+
+CUDA_HOST   void    getResults(int * pop, size_t size, void* returnValue) {
+    dim3 grid, block;
+
+    getResultsKernel<<<grid, block>>>(pop, size, returnValue);
+
+    CCR(cudaGetLastError());
+}
+
+CUDA_GLOBAL void    initPopulationKernel(int ** popPtr, size_t size) {}
+CUDA_GLOBAL void    doTheMagicKernel(int * pop, size_t size, size_t gen) {}
+CUDA_GLOBAL void    getResultsKernel(int * pop, size_t size, void* returnValue) {}
+
 CUDA_DEVICE bool cstrValidate(int * c) {
     for (size_t i = 0; cstrData[8 * i] != CSTR_NO && (8 * i) < CSTR_MAX_CSTR; ++i) {
         if (!cstrTable[cstrData[8 * i]](cstrData + (8 * i) + 1, c)) {

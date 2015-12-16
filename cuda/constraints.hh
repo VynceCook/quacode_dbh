@@ -41,10 +41,18 @@ typedef bool (*cstrFuncPtr)(uintptr_t *, int *);
                 }                                                               \
             } while(0)
 
-CUDA_HOST   size_t pushPolyToGPU(size_t * poly, size_t size);
-CUDA_HOST   void   pushVarToGPU(TVarType * type, Gecode::TQuantifier * quant, size_t size);
-CUDA_HOST   void   pushDomToGPU(int * dom, size_t size);
-CUDA_HOST   void   pushCstrToGPU(uintptr_t * cstrs, size_t size);
+CUDA_HOST   size_t  pushPolyToGPU(size_t * poly, size_t size);
+CUDA_HOST   void    pushVarToGPU(TVarType * type, Gecode::TQuantifier * quant, size_t size);
+CUDA_HOST   void    pushDomToGPU(int * dom, size_t size);
+CUDA_HOST   void    pushCstrToGPU(uintptr_t * cstrs, size_t size);
+
+CUDA_HOST   int *   initPopulation(size_t size);
+CUDA_HOST   void    doTheMagic(int * pop, size_t size, size_t gen);
+CUDA_HOST   void    getResults(int * pop, size_t size, void* returnValue);
+
+CUDA_GLOBAL void    initPopulationKernel(int ** popPtr, size_t size);
+CUDA_GLOBAL void    doTheMagicKernel(int * pop, size_t size, size_t gen);
+CUDA_GLOBAL void    getResultsKernel(int * pop, size_t size, void* returnValue);
 
 CUDA_DEVICE bool cstrValidate(int * c);
 
