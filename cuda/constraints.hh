@@ -41,18 +41,27 @@ typedef bool (*cstrFuncPtr)(uintptr_t *, int *);
                 }                                                               \
             } while(0)
 
+/*          Return data format
+ *
+ *  For each variable and each of its possible values, the number of time it
+ *  has been seen in the population
+ *
+ *  Example : {{0..5}, {0..1}} and the population {(0, 1),(2, 1),(5, 0),(0, 1)}
+ *  we have the data (2, 0, 1, 0, 0, 1, 1, 3)
+ */
+
 CUDA_HOST   size_t  pushPolyToGPU(size_t * poly, size_t size);
 CUDA_HOST   void    pushVarToGPU(TVarType * type, Gecode::TQuantifier * quant, size_t size);
 CUDA_HOST   void    pushDomToGPU(int * dom, size_t size);
 CUDA_HOST   void    pushCstrToGPU(uintptr_t * cstrs, size_t size);
 
-CUDA_HOST   int *   initPopulation(size_t size);
-CUDA_HOST   void    doTheMagic(int * pop, size_t size, size_t gen);
-CUDA_HOST   void    getResults(int * pop, size_t size, void* returnValue);
+CUDA_HOST   int *   initPopulation(size_t popSize, size_t indSize);
+CUDA_HOST   void    doTheMagic(int * pop, size_t popSize, size_t indSize, size_t gen);
+CUDA_HOST   size_t *getResults(int * pop, size_t popSize, size_t indSize);
 
-CUDA_GLOBAL void    initPopulationKernel(int ** popPtr, size_t size);
-CUDA_GLOBAL void    doTheMagicKernel(int * pop, size_t size, size_t gen);
-CUDA_GLOBAL void    getResultsKernel(int * pop, size_t size, void* returnValue);
+CUDA_GLOBAL void    initPopulationKernel(int * popPtr, size_t popSize, size_t indSize);
+CUDA_GLOBAL void    doTheMagicKernel(int * pop, size_t popSize, size_t indSize, size_t gen);
+CUDA_GLOBAL void    getResultsKernel(int * pop, size_t popSize, size_t indSize, size_t domSize, size_t* results);
 
 CUDA_DEVICE bool cstrValidate(int * c);
 

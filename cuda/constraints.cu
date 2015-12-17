@@ -22,6 +22,9 @@ CUDA_DEVICE __constant__ Gecode::TQuantifier cstrQuan[CSTR_MAX_VAR];
 CUDA_DEVICE __constant__ int        cstrDom[CSTR_MAX_VAR];
 CUDA_DEVICE __constant__ size_t     cstrPoly[CSTR_MAX_POLY];
                          size_t     cstrPolyNext = 0;
+CUDA_DEVICE __constant__ size_t     cstrVarNumberD = 0;
+                         size_t     cstrVarNumberH = 0;
+                         size_t     cstrDomSize = 0;
 
 CUDA_DEVICE cstrFuncPtr     cstrTable[64] = {
         &cstrEq,       NULL,          NULL,          NULL,
@@ -61,51 +64,110 @@ CUDA_HOST   size_t pushPolyToGPU(size_t * poly, size_t size) {
 
 CUDA_HOST   void pushVarToGPU(TVarType * type, Gecode::TQuantifier * quant, size_t size) {
     assert(size < CSTR_MAX_VAR);
+    assert(type != nullptr);
+    assert(quant != nullptr);
+
+    CCR(cudaMemcpyToSymbol(cstrVarNumberD, &cstrVarNumberH, size, sizeof(size_t)));
     CCR(cudaMemcpyToSymbol(cstrType, type, size * sizeof(TVarType)));
     CCR(cudaMemcpyToSymbol(cstrQuan, quant, size * sizeof(Gecode::TQuantifier)));
+
+    cstrVarNumberH = size;
 }
 
 CUDA_HOST void pushDomToGPU(int * dom, size_t size) {
     assert(size < CSTR_MAX_VAR);
+    assert(size == 2 * cstrVarNumberH);
+    assert(dom != nullptr);
+
     CCR(cudaMemcpyToSymbol(cstrDom, dom, size * sizeof(int)));
+
+    cstrDomSize = 0;
+
+    for (size_t i = 0; i < size; i += 2) {
+        cstrDomSize += (dom[i + 1] - dom[i]);
+    }
 }
 
 CUDA_HOST void pushCstrToGPU(uintptr_t * cstrs, size_t size) {
     assert(size < (CSTR_MAX_CSTR * 8));
+    assert(cstrs != nullptr);
+
     CCR(cudaMemcpyToSymbol(cstrData, cstrs, size * sizeof(uintptr_t)));
 }
 
-CUDA_HOST   int *   initPopulation(size_t size) {
-        int * d_tmp, *h_tmp;
+CUDA_HOST   int *   initPopulation(size_t popSize, size_t indSize) {
+    dim3 grid, block;
+    int * d_pop;
 
-        CCR(cudaMalloc((void**)&d_tmp, sizeof(int *)));
+    CCR(cudaMalloc((void**)&d_pop, sizeof(int) * cstrVarNumberH * popSize * indSize));
+    initPopulationKernel<<<grid, block>>>(d_pop, popSize, indSize);
+    CCR(cudaGetLastError());
 
-        initPopulationKernel<<<1, 1>>>(&d_tmp, size);
-
-        CCR(cudaGetLastError());
-        CCR(cudaMemcpy(&d_tmp, &h_tmp, sizeof(int *), cudaMemcpyDeviceToHost));
-
-        return h_tmp;
+    return d_pop;
 }
 
-CUDA_HOST   void    doTheMagic(int * pop, size_t size, size_t gen) {
+CUDA_HOST   void    doTheMagic(int * pop, size_t popSize, size_t indSize, size_t gen) {
     dim3 grid, block;
 
-    doTheMagicKernel<<<grid, block>>>(pop, size, gen);
+    assert(pop != nullptr);
+
+    doTheMagicKernel<<<grid, block>>>(pop, popSize, indSize, gen);
     CCR(cudaGetLastError());
 }
 
-CUDA_HOST   void    getResults(int * pop, size_t size, void* returnValue) {
+CUDA_HOST   size_t*    getResults(int * pop, size_t popSize, size_t indSize) {
     dim3 grid, block;
+    static size_t * d_res=  nullptr;
+    size_t * h_res = nullptr;
+    static size_t domSize = 0;
 
-    getResultsKernel<<<grid, block>>>(pop, size, returnValue);
+    assert(pop != nullptr);
 
+    if (domSize == 0 || cstrDomSize != domSize) {
+        domSize = cstrDomSize;
+
+        if (d_res) {
+            CCR(cudaFree((void*)d_res));
+        }
+
+        CCR(cudaMalloc((void**)&d_res, sizeof(size_t) * domSize));
+    }
+
+    getResultsKernel<<<grid, block>>>(pop, popSize, indSize, cstrDomSize, d_res);
     CCR(cudaGetLastError());
+    CCR(cudaFree((void*)pop));
+
+    h_res = new size_t[cstrDomSize];
+
+    CCR(cudaMemcpy(h_res, d_res, sizeof(size_t) * cstrDomSize, cudaMemcpyDeviceToHost));
+
+    return h_res;
 }
 
-CUDA_GLOBAL void    initPopulationKernel(int ** popPtr, size_t size) {}
-CUDA_GLOBAL void    doTheMagicKernel(int * pop, size_t size, size_t gen) {}
-CUDA_GLOBAL void    getResultsKernel(int * pop, size_t size, void* returnValue) {}
+CUDA_GLOBAL void    initPopulationKernel(int * popPtr, size_t popSize, size_t indSize) {}
+CUDA_GLOBAL void    doTheMagicKernel(int * pop, size_t popSize, size_t indSize, size_t gen) {}
+
+CUDA_GLOBAL void    getResultsKernel(int * pop, size_t popSize, size_t indSize, size_t domSize, size_t* res) {
+    size_t  gtid = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t  sum = 0;
+    size_t  idx = 0;
+    int     val = cstrDom[0];
+
+    if (gtid < domSize) {
+        for (size_t i = 0; (i < domSize) && (i < gtid); ++i) {
+            ++val;
+
+            if (val > cstrDom[2 * idx + 1]) {
+                ++idx;
+                val = cstrDom[2 * idx];
+            }
+        }
+
+        for (size_t i = 0; i < popSize; ++i) {
+            sum += (pop[i * indSize + idx] == val);
+        }
+    }
+}
 
 CUDA_DEVICE bool cstrValidate(int * c) {
     for (size_t i = 0; cstrData[8 * i] != CSTR_NO && (8 * i) < CSTR_MAX_CSTR; ++i) {
