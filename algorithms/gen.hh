@@ -134,7 +134,6 @@ public:
 
 private:
     size_t      findVar(const std::string & name);
-    bool        evaluate(const std::vector<int> & vars);
 };
 
 #endif
