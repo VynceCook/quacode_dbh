@@ -71,9 +71,10 @@ class GenAlgo : public AsyncAlgo {
     /// Mutex to block the destructor
     Gecode::Support::Mutex mDestructor;
     /// Stores the number of variables of the binder
-    int mNbVars;
-    int mNbBinderVars;
-    int mLastChoice;
+    int     mNbVars;
+    int     mNbBinderVars;
+    int     mLastChoice;
+    bool    mDomChanged;
 
     VarDescArray            mVars;
 	std::vector<uintptr_t>  mCstrs;

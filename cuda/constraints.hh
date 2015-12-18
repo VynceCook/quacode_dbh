@@ -22,27 +22,29 @@ typedef bool (*cstrFuncPtr)(uintptr_t *, int *);
 #define CSTR_TIMES_IDX  0x6
 #define CSTR_LINEAR_IDX 0x7
 
-#define BLOCK_SIZE  32
+#define BLOCK_SIZE  128
 #define CURAND_SEED 42
 
-#define opAnd(__p0, __v0, __p1, __v1)                                           \
+#define OpAnd(__p0, __v0, __p1, __v1)                                           \
             (((__p0) ? (__v0) : !(__v0)) && ((__p1) ? (__v1) : !(__v1)))
-#define opOr(__p0, __v0, __p1, __v1)                                            \
+#define OpOr(__p0, __v0, __p1, __v1)                                            \
             (((__p0) ? (__v0) : !(__v0)) || ((__p1) ? (__v1) : !(__v1)))
-#define opImp(__p0, __v0, __p1, __v1)                                           \
+#define OpImp(__p0, __v0, __p1, __v1)                                           \
             (!(((__p0) ? (__v0) : !(__v0)) && !((__p1) ? (__v1) : !(__v1))))
-#define opXor(__p0, __v0, __p1, __v1)                                           \
+#define OpXor(__p0, __v0, __p1, __v1)                                           \
             (!((__p0) ? (__v0) : !(__v0)) != !((__p1) ? (__v1) : !(__v1)))
-#define opPlus(__n0, __v0, __n1, __v1)                                          \
+#define OpPlus(__n0, __v0, __n1, __v1)                                          \
             ((__n0) * (__v0) + (__n1) * (__v1))
-#define opTimes(__n, __v0, __v1)                                                \
+#define OpTimes(__n, __v0, __v1)                                                \
             ((__n) * (__v0) * (__v1))
-#define opLinear(__v, __size, __sum)                                            \
+#define OpLinear(__v, __size, __sum)                                            \
             do {                                                                \
                 for (int i = 0; i < __size; i += 2) {                           \
                     __sum += __v[i] * __v[i + 1];                               \
                 }                                                               \
             } while(0)
+#define CurandInterval(__value, __min, __max) \
+            (__value % (__max - __min + 1)) + __min
 
 /*          Return data format
  *
@@ -53,8 +55,6 @@ typedef bool (*cstrFuncPtr)(uintptr_t *, int *);
  *  we have the data (2, 0, 1, 0, 0, 1, 1, 3)
  */
 
-#define CurandInterval(__value, __min, __max) \
-            (__value % (__max - __min + 1)) + __min
 
 CUDA_HOST   size_t  pushPolyToGPU(size_t * poly, size_t size);
 CUDA_HOST   void    pushVarToGPU(TVarType * type, Gecode::TQuantifier * quant, size_t size);
@@ -63,7 +63,7 @@ CUDA_HOST   void    pushCstrToGPU(uintptr_t * cstrs, size_t size);
 
 CUDA_HOST   int *   initPopulation(size_t popSize, size_t indSize);
 CUDA_HOST   void    doTheMagic(int * pop, size_t popSize, size_t indSize, size_t gen);
-CUDA_HOST   size_t *getResults(int * pop, size_t popSize, size_t indSize);
+CUDA_HOST   size_t *getResults(int * pop, size_t popSize, size_t indSize, size_t * resSize);
 
 CUDA_GLOBAL void    initPopulationKernel(int * popPtr, size_t popSize, size_t indSize);
 CUDA_GLOBAL void    doTheMagicKernel(int * pop, size_t popSize, size_t indSize, size_t gen);

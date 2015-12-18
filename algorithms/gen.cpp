@@ -92,6 +92,7 @@ GenAlgo::GenAlgo() : AsyncAlgo() {
     mNbVars = 0;
     mNbBinderVars = 0;
     mLastChoice = 0;
+    mDomChanged = false;
 }
 
 GenAlgo::~GenAlgo() {
@@ -124,6 +125,7 @@ void GenAlgo::newChoice(int iVar, int min, int max) {
     mVars.curDom[iVar * 2] = min;
     mVars.curDom[iVar * 2 + 1] = max;
     mLastChoice = iVar;
+    mDomChanged = true;
 }
 
 void GenAlgo::newPromisingScenario(const TScenario& scenario) {
@@ -323,13 +325,30 @@ void GenAlgo::parallelTask() {
     pushVarToGPU(mVars.type, mVars.q, mVars.next);
     pushDomToGPU(mVars.curDom, mVars.next * 2);
 
-    OSTREAM << "Calling foo kernel" << std::endl;
-    foo();
 
     mDestructor.acquire();
     srand(time(NULL));
     for ( ; ; ) {
+        int * population = nullptr;
+        size_t *results = nullptr;
+        size_t resultsSize = 0;
+
+
         if (mbQuacodeThreadFinished) break;
+
+        if (mDomChanged) {
+            pushDomToGPU(mVars.curDom, mVars.next * 2);
+        }
+
+        population = initPopulation(256, mVars.next);
+
+        doTheMagic(population, 256, mVars.next, 1000);
+        results = getResults(population, 256, mVars.next, &resultsSize);
+
+        for (size_t i = 0; i < resultsSize; ++i) {
+            OSTREAM << results[i] << ", ";
+        }
+        OSTREAM << std::endl;
 
         Gecode::Support::Thread::sleep(300);
     }

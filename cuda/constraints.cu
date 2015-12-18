@@ -23,11 +23,10 @@ CUDA_DEVICE __constant__ Gecode::TQuantifier cstrQuan[CSTR_MAX_VAR];
 CUDA_DEVICE __constant__ int        cstrDom[CSTR_MAX_VAR];
 CUDA_DEVICE __constant__ size_t     cstrPoly[CSTR_MAX_POLY];
                          size_t     cstrPolyNext = 0;
-CUDA_DEVICE __constant__ size_t     cstrVarNumberD = 0;
-                         size_t     cstrVarNumberH = 0;
+                         size_t     cstrVarNumber = 0;
                          size_t     cstrDomSize = 0;
 
-CUDA_DEVICE curandState_t *d_states;
+CUDA_DEVICE              curandState_t *cstrRandStates = nullptr;
 
 CUDA_DEVICE cstrFuncPtr     cstrTable[64] = {
         &cstrEq,       NULL,          NULL,          NULL,
@@ -70,16 +69,15 @@ CUDA_HOST   void pushVarToGPU(TVarType * type, Gecode::TQuantifier * quant, size
     assert(type != nullptr);
     assert(quant != nullptr);
 
-    CCR(cudaMemcpyToSymbol(cstrVarNumberD, &cstrVarNumberH, size, sizeof(size_t)));
     CCR(cudaMemcpyToSymbol(cstrType, type, size * sizeof(TVarType)));
     CCR(cudaMemcpyToSymbol(cstrQuan, quant, size * sizeof(Gecode::TQuantifier)));
 
-    cstrVarNumberH = size;
+    cstrVarNumber = size;
 }
 
 CUDA_HOST void pushDomToGPU(int * dom, size_t size) {
     assert(size < CSTR_MAX_VAR);
-    assert(size == 2 * cstrVarNumberH);
+    assert(size == 2 * cstrVarNumber);
     assert(dom != nullptr);
 
     CCR(cudaMemcpyToSymbol(cstrDom, dom, size * sizeof(int)));
@@ -107,12 +105,14 @@ CUDA_HOST void pushCstrToGPU(uintptr_t * cstrs, size_t size) {
 CUDA_HOST   int *   initPopulation(size_t popSize, size_t indSize) {
     dim3 grid, block;
     int * d_pop;
+    curandState_t *state;
 
     block = dim3(BLOCK_SIZE);
     grid = dim3((popSize + BLOCK_SIZE - 1)/ BLOCK_SIZE);
 
     CCR(cudaMalloc((void**)&d_pop, sizeof(int) * popSize * indSize));
-    CCR(cudaMalloc((void**)&d_states, sizeof(curandState_t) * popSize));
+    CCR(cudaMalloc((void**)&state, sizeof(curandState_t) * popSize));
+    CCR(cudaMemcpyToSymbol(cstrRandStates, &state, sizeof(curandState_t*)));
     initPopulationKernel<<<grid, block>>>(d_pop, popSize, indSize);
     CCR(cudaGetLastError());
 
@@ -124,17 +124,23 @@ CUDA_HOST   void    doTheMagic(int * pop, size_t popSize, size_t indSize, size_t
 
     assert(pop != nullptr);
 
+    //TODO set block and grid size more effectivelly
+    block = dim3(BLOCK_SIZE);
+    grid = dim3((popSize + BLOCK_SIZE - 1)/ BLOCK_SIZE);
+
     doTheMagicKernel<<<grid, block>>>(pop, popSize, indSize, gen);
     CCR(cudaGetLastError());
 }
 
-CUDA_HOST   size_t*    getResults(int * pop, size_t popSize, size_t indSize) {
+CUDA_HOST   size_t*    getResults(int * pop, size_t popSize, size_t indSize, size_t * resSize) {
     dim3 grid, block;
     static size_t * d_res=  nullptr;
     size_t * h_res = nullptr;
     static size_t domSize = 0;
 
     // TODO set block & grid size
+    block = dim3(BLOCK_SIZE);
+    grid = dim3((domSize + BLOCK_SIZE - 1)/ BLOCK_SIZE);
 
     assert(pop != nullptr);
 
@@ -148,11 +154,12 @@ CUDA_HOST   size_t*    getResults(int * pop, size_t popSize, size_t indSize) {
         CCR(cudaMalloc((void**)&d_res, sizeof(size_t) * domSize));
     }
 
-    getResultsKernel<<<grid, block>>>(pop, popSize, indSize, cstrDomSize, d_res);
+    getResultsKernel<<<256, 32>>>(pop, popSize, indSize, cstrDomSize, d_res);
     CCR(cudaGetLastError());
     CCR(cudaFree((void*)pop));
 
     h_res = new size_t[cstrDomSize];
+    *resSize = cstrDomSize;
 
     CCR(cudaMemcpy(h_res, d_res, sizeof(size_t) * cstrDomSize, cudaMemcpyDeviceToHost));
 
@@ -168,11 +175,11 @@ CUDA_HOST   size_t*    getResults(int * pop, size_t popSize, size_t indSize) {
 CUDA_GLOBAL void    initPopulationKernel(int * popPtr, size_t popSize, size_t indSize) {
     size_t gtid = blockIdx.x * blockDim.x + threadIdx.x;
 
-    curand_init(CURAND_SEED, gtid, 0, &d_states[gtid]);
+    curand_init(CURAND_SEED, gtid, 0, &cstrRandStates[gtid]);
 
     if (gtid < popSize){
         for (int i = 0; i<indSize; ++i){
-            popPtr[indSize * gtid + i] = CurandInterval(curand(&d_states[gtid]), cstrDom[2 * i], cstrDom[(2 * i) + 1]);
+            popPtr[indSize * gtid + i] = CurandInterval(curand(&cstrRandStates[gtid]), cstrDom[2 * i], cstrDom[(2 * i) + 1]);
             // Variable i is in [cstrDom[2i], cstrDom[2i + 1]]
         }
     }
@@ -202,8 +209,8 @@ CUDA_GLOBAL void    doTheMagicKernel(int * pop, size_t popSize, size_t indSize, 
 
     if (gtid < popSize){
         for (int epoch = 0; epoch < gen && old_fitness > 0; ++epoch){
-            mut_var = CurandInterval(curand(&d_states[gtid]), 0, indSize - 1);
-            child[mut_var] = CurandInterval(curand(&d_states[gtid]), cstrDom[2 * mut_var], cstrDom[(2 * mut_var) + 1]);
+            mut_var = CurandInterval(curand(&cstrRandStates[gtid]), 0, indSize - 1);
+            child[mut_var] = CurandInterval(curand(&cstrRandStates[gtid]), cstrDom[2 * mut_var], cstrDom[(2 * mut_var) + 1]);
             cur_fitness = cstrValidate(child);
             if (cur_fitness < old_fitness){
                 // We save the child
@@ -246,8 +253,8 @@ CUDA_GLOBAL void    getResultsKernel(int * pop, size_t popSize, size_t indSize, 
         for (size_t i = 0; i < popSize; ++i) {
             sum += (pop[i * indSize + idx] == val);
         }
+        res[gtid] = sum;
     }
-    res[gtid] = sum;
 }
 
 /**
@@ -277,42 +284,42 @@ CUDA_DEVICE bool cstrAndEQ(uintptr_t * data, int * c) {
     bool p0 = (bool) data[0], p1 = (bool) data[2];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opAnd(p0, c[v0], p1, c[v1]) == c[v2];
+    return OpAnd(p0, c[v0], p1, c[v1]) == c[v2];
 }
 
 CUDA_DEVICE bool cstrAndNQ(uintptr_t * data, int * c) {
     bool p0 = (bool) data[0], p1 = (bool) data[2];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opAnd(p0, c[v0], p1, c[v1]) != c[v2];
+    return OpAnd(p0, c[v0], p1, c[v1]) != c[v2];
 }
 
 CUDA_DEVICE bool cstrAndGQ(uintptr_t * data, int * c) {
     bool p0 = (bool) data[0], p1 = (bool) data[2];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opAnd(p0, c[v0], p1, c[v1]) > c[v2];
+    return OpAnd(p0, c[v0], p1, c[v1]) > c[v2];
 }
 
 CUDA_DEVICE bool cstrAndGR(uintptr_t * data, int * c) {
     bool p0 = (bool) data[0], p1 = (bool) data[2];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opAnd(p0, c[v0], p1, c[v1]) >= c[v2];
+    return OpAnd(p0, c[v0], p1, c[v1]) >= c[v2];
 }
 
 CUDA_DEVICE bool cstrAndLQ(uintptr_t * data, int * c) {
     bool p0 = (bool) data[0], p1 = (bool) data[2];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opAnd(p0, c[v0], p1, c[v1]) < c[v2];
+    return OpAnd(p0, c[v0], p1, c[v1]) < c[v2];
 }
 
 CUDA_DEVICE bool cstrAndLE(uintptr_t * data, int * c) {
     bool p0 = (bool) data[0], p1 = (bool) data[2];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opAnd(p0, c[v0], p1, c[v1]) <= c[v2];
+    return OpAnd(p0, c[v0], p1, c[v1]) <= c[v2];
 }
 
 
@@ -320,210 +327,210 @@ CUDA_DEVICE bool cstrOrEQ(uintptr_t * data, int * c) {
     bool p0 = (bool) data[0], p1 = (bool) data[2];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opOr(p0, c[v0], p1, c[v1]) == c[v2];
+    return OpOr(p0, c[v0], p1, c[v1]) == c[v2];
 }
 
 CUDA_DEVICE bool cstrOrNQ(uintptr_t * data, int * c) {
     bool p0 = (bool) data[0], p1 = (bool) data[2];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opOr(p0, c[v0], p1, c[v1]) != c[v2];
+    return OpOr(p0, c[v0], p1, c[v1]) != c[v2];
 }
 
 CUDA_DEVICE bool cstrOrGQ(uintptr_t * data, int * c) {
     bool p0 = (bool) data[0], p1 = (bool) data[2];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opOr(p0, c[v0], p1, c[v1]) > c[v2];
+    return OpOr(p0, c[v0], p1, c[v1]) > c[v2];
 }
 
 CUDA_DEVICE bool cstrOrGR(uintptr_t * data, int * c) {
     bool p0 = (bool) data[0], p1 = (bool) data[2];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opOr(p0, c[v0], p1, c[v1]) >= c[v2];
+    return OpOr(p0, c[v0], p1, c[v1]) >= c[v2];
 }
 
 CUDA_DEVICE bool cstrOrLQ(uintptr_t * data, int * c) {
     bool p0 = (bool) data[0], p1 = (bool) data[2];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opOr(p0, c[v0], p1, c[v1]) < c[v2];
+    return OpOr(p0, c[v0], p1, c[v1]) < c[v2];
 }
 
 CUDA_DEVICE bool cstrOrLE(uintptr_t * data, int * c) {
     bool p0 = (bool) data[0], p1 = (bool) data[2];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opOr(p0, c[v0], p1, c[v1]) <= c[v2];
+    return OpOr(p0, c[v0], p1, c[v1]) <= c[v2];
 }
 
 CUDA_DEVICE bool cstrImpEQ(uintptr_t * data, int * c) {
     bool p0 = (bool) data[0], p1 = (bool) data[2];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opImp(p0, c[v0], p1, c[v1]) == c[v2];
+    return OpImp(p0, c[v0], p1, c[v1]) == c[v2];
 }
 
 CUDA_DEVICE bool cstrImpNQ(uintptr_t * data, int * c) {
     bool p0 = (bool) data[0], p1 = (bool) data[2];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opImp(p0, c[v0], p1, c[v1]) != c[v2];
+    return OpImp(p0, c[v0], p1, c[v1]) != c[v2];
 }
 
 CUDA_DEVICE bool cstrImpGQ(uintptr_t * data, int * c) {
     bool p0 = (bool) data[0], p1 = (bool) data[2];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opImp(p0, c[v0], p1, c[v1]) > c[v2];
+    return OpImp(p0, c[v0], p1, c[v1]) > c[v2];
 }
 
 CUDA_DEVICE bool cstrImpGR(uintptr_t * data, int * c) {
     bool p0 = (bool) data[0], p1 = (bool) data[2];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opImp(p0, c[v0], p1, c[v1]) >= c[v2];
+    return OpImp(p0, c[v0], p1, c[v1]) >= c[v2];
 }
 
 CUDA_DEVICE bool cstrImpLQ(uintptr_t * data, int * c) {
     bool p0 = (bool) data[0], p1 = (bool) data[2];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opImp(p0, c[v0], p1, c[v1]) < c[v2];
+    return OpImp(p0, c[v0], p1, c[v1]) < c[v2];
 }
 
 CUDA_DEVICE bool cstrImpLE(uintptr_t * data, int * c) {
     bool p0 = (bool) data[0], p1 = (bool) data[2];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opImp(p0, c[v0], p1, c[v1]) <= c[v2];
+    return OpImp(p0, c[v0], p1, c[v1]) <= c[v2];
 }
 
 CUDA_DEVICE bool cstrXorEQ(uintptr_t * data, int * c) {
     bool p0 = (bool) data[0], p1 = (bool) data[2];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opXor(p0, c[v0], p1, c[v1]) == c[v2];
+    return OpXor(p0, c[v0], p1, c[v1]) == c[v2];
 }
 
 CUDA_DEVICE bool cstrXorNQ(uintptr_t * data, int * c) {
     bool p0 = (bool) data[0], p1 = (bool) data[2];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opXor(p0, c[v0], p1, c[v1]) != c[v2];
+    return OpXor(p0, c[v0], p1, c[v1]) != c[v2];
 }
 
 CUDA_DEVICE bool cstrXorGQ(uintptr_t * data, int * c) {
     bool p0 = (bool) data[0], p1 = (bool) data[2];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opXor(p0, c[v0], p1, c[v1]) > c[v2];
+    return OpXor(p0, c[v0], p1, c[v1]) > c[v2];
 }
 
 CUDA_DEVICE bool cstrXorGR(uintptr_t * data, int * c) {
     bool p0 = (bool) data[0], p1 = (bool) data[2];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opXor(p0, c[v0], p1, c[v1]) >= c[v2];
+    return OpXor(p0, c[v0], p1, c[v1]) >= c[v2];
 }
 
 CUDA_DEVICE bool cstrXorLQ(uintptr_t * data, int * c) {
     bool p0 = (bool) data[0], p1 = (bool) data[2];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opXor(p0, c[v0], p1, c[v1]) < c[v2];
+    return OpXor(p0, c[v0], p1, c[v1]) < c[v2];
 }
 
 CUDA_DEVICE bool cstrXorLE(uintptr_t * data, int * c) {
     bool p0 = (bool) data[0], p1 = (bool) data[2];
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opXor(p0, c[v0], p1, c[v1]) <= c[v2];
+    return OpXor(p0, c[v0], p1, c[v1]) <= c[v2];
 }
 
 CUDA_DEVICE bool cstrPlusEQ(uintptr_t * data, int * c) {
     int n0 = uint2int((unsigned int) data[0]), n1 = uint2int((unsigned int) data[2]);
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opPlus(n0, c[v0], n1, c[v1]) == c[v2];
+    return OpPlus(n0, c[v0], n1, c[v1]) == c[v2];
 }
 
 CUDA_DEVICE bool cstrPlusNQ(uintptr_t * data, int * c) {
     int n0 = uint2int((unsigned int) data[0]), n1 = uint2int((unsigned int) data[2]);
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opPlus(n0, c[v0], n1, c[v1]) != c[v2];
+    return OpPlus(n0, c[v0], n1, c[v1]) != c[v2];
 }
 
 CUDA_DEVICE bool cstrPlusGQ(uintptr_t * data, int * c) {
     int n0 = uint2int((unsigned int) data[0]), n1 = uint2int((unsigned int) data[2]);
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opPlus(n0, c[v0], n1, c[v1]) > c[v2];
+    return OpPlus(n0, c[v0], n1, c[v1]) > c[v2];
 }
 
 CUDA_DEVICE bool cstrPlusGR(uintptr_t * data, int * c) {
     int n0 = uint2int((unsigned int) data[0]), n1 = uint2int((unsigned int) data[2]);
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opPlus(n0, c[v0], n1, c[v1]) >= c[v2];
+    return OpPlus(n0, c[v0], n1, c[v1]) >= c[v2];
 }
 
 CUDA_DEVICE bool cstrPlusLQ(uintptr_t * data, int * c) {
     int n0 = uint2int((unsigned int) data[0]), n1 = uint2int((unsigned int) data[2]);
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opPlus(n0, c[v0], n1, c[v1]) < c[v2];
+    return OpPlus(n0, c[v0], n1, c[v1]) < c[v2];
 }
 
 CUDA_DEVICE bool cstrPlusLE(uintptr_t * data, int * c) {
     int n0 = uint2int((unsigned int) data[0]), n1 = uint2int((unsigned int) data[2]);
     size_t v0 = (size_t) data[1], v1 = (size_t) data[3], v2 = (size_t) data[4];
 
-    return opPlus(n0, c[v0], n1, c[v1]) <= c[v2];
+    return OpPlus(n0, c[v0], n1, c[v1]) <= c[v2];
 }
 
 CUDA_DEVICE bool cstrTimesEQ(uintptr_t * data, int * c) {
     int n = uint2int((unsigned int) data[0]);
     size_t v0 = (size_t) data[1], v1 = (size_t) data[2], v2 = (size_t) data[3];
 
-    return opTimes(n, c[v0], c[v1]) == c[v2];
+    return OpTimes(n, c[v0], c[v1]) == c[v2];
 }
 
 CUDA_DEVICE bool cstrTimesNQ(uintptr_t * data, int * c) {
     int n = uint2int((unsigned int) data[0]);
     size_t v0 = (size_t) data[1], v1 = (size_t) data[2], v2 = (size_t) data[3];
 
-    return opTimes(n, c[v0], c[v1]) != c[v2];
+    return OpTimes(n, c[v0], c[v1]) != c[v2];
 }
 
 CUDA_DEVICE bool cstrTimesGQ(uintptr_t * data, int * c) {
     int n = uint2int((unsigned int) data[0]);
     size_t v0 = (size_t) data[1], v1 = (size_t) data[2], v2 = (size_t) data[3];
 
-    return opTimes(n, c[v0], c[v1]) > c[v2];
+    return OpTimes(n, c[v0], c[v1]) > c[v2];
 }
 
 CUDA_DEVICE bool cstrTimesGR(uintptr_t * data, int * c) {
     int n = uint2int((unsigned int) data[0]);
     size_t v0 = (size_t) data[1], v1 = (size_t) data[2], v2 = (size_t) data[3];
 
-    return opTimes(n, c[v0], c[v1]) >= c[v2];
+    return OpTimes(n, c[v0], c[v1]) >= c[v2];
 }
 
 CUDA_DEVICE bool cstrTimesLQ(uintptr_t * data, int * c) {
     int n = uint2int((unsigned int) data[0]);
     size_t v0 = (size_t) data[1], v1 = (size_t) data[2], v2 = (size_t) data[3];
 
-    return opTimes(n, c[v0], c[v1]) < c[v2];
+    return OpTimes(n, c[v0], c[v1]) < c[v2];
 }
 
 CUDA_DEVICE bool cstrTimesLE(uintptr_t * data, int * c) {
     int n = uint2int((unsigned int) data[0]);
     size_t v0 = (size_t) data[1], v1 = (size_t) data[2], v2 = (size_t) data[3];
 
-    return opTimes(n, c[v0], c[v1]) <= c[v2];
+    return OpTimes(n, c[v0], c[v1]) <= c[v2];
 }
 
 CUDA_DEVICE bool cstrLinearEQ(uintptr_t * data, int * c) {
@@ -532,7 +539,7 @@ CUDA_DEVICE bool cstrLinearEQ(uintptr_t * data, int * c) {
     size_t *v = cstrPoly + vIdx;
     int sum = 0;
 
-    opLinear(v, size, sum);
+    OpLinear(v, size, sum);
     return sum == c[v0];
 }
 
@@ -541,7 +548,7 @@ CUDA_DEVICE bool cstrLinearNQ(uintptr_t * data, int * c) {
     size_t v0 = (size_t) data[2];
     int sum = 0;
 
-    opLinear(v, size, sum);
+    OpLinear(v, size, sum);
     return sum != c[v0];
 }
 
@@ -550,7 +557,7 @@ CUDA_DEVICE bool cstrLinearGQ(uintptr_t * data, int * c) {
     size_t v0 = (size_t) data[2];
     int sum = 0;
 
-    opLinear(v, size, sum);
+    OpLinear(v, size, sum);
     return sum > c[v0];
 }
 
@@ -559,7 +566,7 @@ CUDA_DEVICE bool cstrLinearGR(uintptr_t * data, int * c) {
     size_t v0 = (size_t) data[2];
     int sum = 0;
 
-    opLinear(v, size, sum);
+    OpLinear(v, size, sum);
     return sum >= c[v0];
 }
 
@@ -568,7 +575,7 @@ CUDA_DEVICE bool cstrLinearLQ(uintptr_t * data, int * c) {
     size_t v0 = (size_t) data[2];
     int sum = 0;
 
-    opLinear(v, size, sum);
+    OpLinear(v, size, sum);
     return sum < c[v0];
 }
 
@@ -577,6 +584,6 @@ CUDA_DEVICE bool cstrLinearLE(uintptr_t * data, int * c) {
     size_t v0 = (size_t) data[2];
     int sum = 0;
 
-    opLinear(v, size, sum);
+    OpLinear(v, size, sum);
     return sum <= c[v0];
 }
