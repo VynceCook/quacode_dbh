@@ -22,6 +22,9 @@ typedef bool (*cstrFuncPtr)(uintptr_t *, int *);
 #define CSTR_TIMES_IDX  0x6
 #define CSTR_LINEAR_IDX 0x7
 
+#define BLOCK_SIZE  32
+#define CURAND_SEED 42
+
 #define opAnd(__p0, __v0, __p1, __v1)                                           \
             (((__p0) ? (__v0) : !(__v0)) && ((__p1) ? (__v1) : !(__v1)))
 #define opOr(__p0, __v0, __p1, __v1)                                            \
@@ -50,6 +53,9 @@ typedef bool (*cstrFuncPtr)(uintptr_t *, int *);
  *  we have the data (2, 0, 1, 0, 0, 1, 1, 3)
  */
 
+#define CurandInterval(__value, __min, __max) \
+            (__value % (__max - __min + 1)) + __min
+
 CUDA_HOST   size_t  pushPolyToGPU(size_t * poly, size_t size);
 CUDA_HOST   void    pushVarToGPU(TVarType * type, Gecode::TQuantifier * quant, size_t size);
 CUDA_HOST   void    pushDomToGPU(int * dom, size_t size);
@@ -63,7 +69,7 @@ CUDA_GLOBAL void    initPopulationKernel(int * popPtr, size_t popSize, size_t in
 CUDA_GLOBAL void    doTheMagicKernel(int * pop, size_t popSize, size_t indSize, size_t gen);
 CUDA_GLOBAL void    getResultsKernel(int * pop, size_t popSize, size_t indSize, size_t domSize, size_t* results);
 
-CUDA_DEVICE bool cstrValidate(int * c);
+CUDA_DEVICE int  cstrValidate(int * c);
 
 CUDA_DEVICE bool cstrEq(uintptr_t * data, int * c);
 

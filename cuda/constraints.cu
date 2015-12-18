@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
+#include <curand_kernel.h>
 
 #define CSTR_VAL_2X     CSTR_NO,  CSTR_NO
 #define CSTR_VAL_4X     CSTR_VAL_2X,  CSTR_VAL_2X
@@ -25,6 +26,8 @@ CUDA_DEVICE __constant__ size_t     cstrPoly[CSTR_MAX_POLY];
 CUDA_DEVICE __constant__ size_t     cstrVarNumberD = 0;
                          size_t     cstrVarNumberH = 0;
                          size_t     cstrDomSize = 0;
+
+CUDA_DEVICE curandState_t *d_states;
 
 CUDA_DEVICE cstrFuncPtr     cstrTable[64] = {
         &cstrEq,       NULL,          NULL,          NULL,
@@ -95,11 +98,21 @@ CUDA_HOST void pushCstrToGPU(uintptr_t * cstrs, size_t size) {
     CCR(cudaMemcpyToSymbol(cstrData, cstrs, size * sizeof(uintptr_t)));
 }
 
+/**
+ * Calls the kernel which initializes the population
+ * @param popSize number of individuals in the population
+ * @param indSize number of variables in an individual
+ * @return initialized population
+ */
 CUDA_HOST   int *   initPopulation(size_t popSize, size_t indSize) {
     dim3 grid, block;
     int * d_pop;
 
-    CCR(cudaMalloc((void**)&d_pop, sizeof(int) * cstrVarNumberH * popSize * indSize));
+    block = dim3(BLOCK_SIZE);
+    grid = dim3((popSize + BLOCK_SIZE - 1)/ BLOCK_SIZE);
+
+    CCR(cudaMalloc((void**)&d_pop, sizeof(int) * popSize * indSize));
+    CCR(cudaMalloc((void**)&d_states, sizeof(curandState_t) * popSize));
     initPopulationKernel<<<grid, block>>>(d_pop, popSize, indSize);
     CCR(cudaGetLastError());
 
@@ -120,6 +133,8 @@ CUDA_HOST   size_t*    getResults(int * pop, size_t popSize, size_t indSize) {
     static size_t * d_res=  nullptr;
     size_t * h_res = nullptr;
     static size_t domSize = 0;
+
+    // TODO set block & grid size
 
     assert(pop != nullptr);
 
@@ -144,16 +159,81 @@ CUDA_HOST   size_t*    getResults(int * pop, size_t popSize, size_t indSize) {
     return h_res;
 }
 
-CUDA_GLOBAL void    initPopulationKernel(int * popPtr, size_t popSize, size_t indSize) {}
-CUDA_GLOBAL void    doTheMagicKernel(int * pop, size_t popSize, size_t indSize, size_t gen) {}
+/**
+ * Randomly creates a population of candidates to evolve
+ * @param popPtr the address where the population will be stored
+ * @param popSize number of individuals
+ * @param indSize size of an an individual
+ */
+CUDA_GLOBAL void    initPopulationKernel(int * popPtr, size_t popSize, size_t indSize) {
+    size_t gtid = blockIdx.x * blockDim.x + threadIdx.x;
 
+    curand_init(CURAND_SEED, gtid, 0, &d_states[gtid]);
+
+    if (gtid < popSize){
+        for (int i = 0; i<indSize; ++i){
+            popPtr[indSize * gtid + i] = CurandInterval(curand(&d_states[gtid]), cstrDom[2 * i], cstrDom[(2 * i) + 1]);
+            // Variable i is in [cstrDom[2i], cstrDom[2i + 1]]
+        }
+    }
+}
+
+/**
+ * "Evolves" an individual (a set of values) to give it the lowest score
+ * possible (We are looking for the worst possible candidat, to give the solver
+ * some hint, where he must not search
+ * @param pop the candidate population
+ * @param popSize how many individual are in this population
+ * @param indSize the individual's size (ints)
+ * @param gen number of generations (epochs) before stopping
+ */
+CUDA_GLOBAL void    doTheMagicKernel(int * pop, size_t popSize, size_t indSize, size_t gen) {
+    size_t gtid = blockIdx.x * blockDim.x + threadIdx.x;
+    int old_fitness, cur_fitness;
+    int * indiv = pop + (gtid * indSize); // points at the first element of our current individual
+    int * child = new int[indSize];       // candidate for the next generation
+    int mut_var = 0;                      // Mutated variable
+
+    old_fitness = cstrValidate(indiv);
+
+    for (int i = 0;  i < indSize; ++i){
+        child[i] = indiv[i];
+    }
+
+    if (gtid < popSize){
+        for (int epoch = 0; epoch < gen && old_fitness > 0; ++epoch){
+            mut_var = CurandInterval(curand(&d_states[gtid]), 0, indSize - 1);
+            child[mut_var] = CurandInterval(curand(&d_states[gtid]), cstrDom[2 * mut_var], cstrDom[(2 * mut_var) + 1]);
+            cur_fitness = cstrValidate(child);
+            if (cur_fitness < old_fitness){
+                // We save the child
+                indiv[mut_var] = child[mut_var];
+                old_fitness = cur_fitness;
+            }
+            else{
+                // We reset the child
+                child[mut_var] = indiv[mut_var];
+            }
+        }
+    }
+}
+
+/**
+ * Counts how many occurences of a specific value we have, for a given variable
+ * @param pop candidates population
+ * @param popSize number of individuals in the population
+ * @param indSize individual size (how many ints)
+ * @param domSize the sum of each constraint's domain size
+ * @param res the result
+ */
 CUDA_GLOBAL void    getResultsKernel(int * pop, size_t popSize, size_t indSize, size_t domSize, size_t* res) {
     size_t  gtid = blockIdx.x * blockDim.x + threadIdx.x;
     size_t  sum = 0;
-    size_t  idx = 0;
-    int     val = cstrDom[0];
+    size_t  idx = 0;          // constraint's index
+    int     val = cstrDom[0]; // value to test
 
     if (gtid < domSize) {
+        // set val to the value we want to test
         for (size_t i = 0; (i < domSize) && (i < gtid); ++i) {
             ++val;
 
@@ -167,15 +247,23 @@ CUDA_GLOBAL void    getResultsKernel(int * pop, size_t popSize, size_t indSize, 
             sum += (pop[i * indSize + idx] == val);
         }
     }
+    res[gtid] = sum;
 }
 
-CUDA_DEVICE bool cstrValidate(int * c) {
+/**
+ * Test each constraint on a candidate to evaluate it
+ * @param c the candidate
+ * @return how many constraints are satisfied
+ */
+CUDA_DEVICE int cstrValidate(int * c) {
+    int satisfied = 0;
     for (size_t i = 0; cstrData[8 * i] != CSTR_NO && (8 * i) < CSTR_MAX_CSTR; ++i) {
-        if (!cstrTable[cstrData[8 * i]](cstrData + (8 * i) + 1, c)) {
-            return false;
+        if (cstrTable[cstrData[8 * i]](cstrData + (8 * i) + 1, c)) {
+            satisfied ++;
         }
     }
-    return true;
+
+    return(satisfied);
 }
 
 CUDA_DEVICE bool cstrEq(uintptr_t * data, int * c) {
