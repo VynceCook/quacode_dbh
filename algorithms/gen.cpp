@@ -118,6 +118,8 @@ void GenAlgo::newAuxVarCreated(const std::string& name, TVarType t, int min, int
 void GenAlgo::newChoice(int iVar, int min, int max) {
     LOG(OSTREAM << "Chef ! We need to explore others choices : " << iVar << " {" << min << "," << max << "}" << std::endl;)
 
+    mDomaine.acquire();
+
     if (iVar < mLastChoice) {
         restaureDomaines(iVar, mLastChoice);
     }
@@ -126,6 +128,8 @@ void GenAlgo::newChoice(int iVar, int min, int max) {
     mVars.curDom[iVar * 2 + 1] = max;
     mLastChoice = iVar;
     mDomChanged = true;
+
+    mDomaine.release();
 }
 
 void GenAlgo::newPromisingScenario(const TScenario& scenario) {
@@ -159,7 +163,7 @@ void GenAlgo::postedEq(const std::string& v0, int val) {
 
     if (v0Idx != (size_t)-1) {
 		mCstrs.insert(mCstrs.end(), {
-				(CSTR_EQ_IDX << 3), v0Idx, int2uint(val), NULL,
+				CSTR_EQ_IDX, v0Idx, int2uint(val), NULL,
 				NULL, NULL, NULL, NULL
 				});
     }
@@ -176,7 +180,7 @@ void GenAlgo::postedAnd(bool p0, const std::string& v0, bool p1, const std::stri
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
         mCstrs.insert(mCstrs.end(), {
-                (CSTR_AND_IDX << 3) | cmp, p0, v0Idx, p1,
+                CSTR_AND_IDX | cmp, p0, v0Idx, p1,
                 v1Idx, v2Idx, NULL, NULL
                 });
     }
@@ -193,7 +197,7 @@ void GenAlgo::postedOr(bool p0, const std::string& v0, bool p1, const std::strin
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
         mCstrs.insert(mCstrs.end(), {
-                (CSTR_OR_IDX << 3) | cmp, p0, v0Idx, p1,
+                CSTR_OR_IDX | cmp, p0, v0Idx, p1,
                 v1Idx, v2Idx, NULL, NULL
                 });
     }
@@ -210,7 +214,7 @@ void GenAlgo::postedImp(bool p0, const std::string& v0, bool p1, const std::stri
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
         mCstrs.insert(mCstrs.end(), {
-                (CSTR_IMP_IDX << 3) | cmp, p0, v0Idx, p1,
+                CSTR_IMP_IDX | cmp, p0, v0Idx, p1,
                 v1Idx, v2Idx, NULL, NULL
                 });
     }
@@ -227,7 +231,7 @@ void GenAlgo::postedXOr(bool p0, const std::string& v0, bool p1, const std::stri
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
         mCstrs.insert(mCstrs.end(), {
-                (CSTR_XOR_IDX << 3) | cmp, p0, v0Idx, p1,
+                CSTR_XOR_IDX | cmp, p0, v0Idx, p1,
                 v1Idx, v2Idx, NULL, NULL
                 });
     }
@@ -244,7 +248,7 @@ void GenAlgo::postedPlus(int n0, const std::string& v0, int n1, const std::strin
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
         mCstrs.insert(mCstrs.end(), {
-                (CSTR_PLUS_IDX << 3) | cmp, int2uint(n0), v0Idx, int2uint(n1),
+                CSTR_PLUS_IDX | cmp, int2uint(n0), v0Idx, int2uint(n1),
                 v1Idx, v2Idx, NULL, NULL
                 });
     }
@@ -261,7 +265,7 @@ void GenAlgo::postedTimes(int n, const std::string& v0, const std::string& v1, T
 
     if ((v0Idx != (size_t)-1) && (v1Idx != (size_t)-1) && (v2Idx != (size_t)-1)) {
         mCstrs.insert(mCstrs.end(), {
-                (CSTR_TIMES_IDX << 3) | cmp, int2uint(n), v0Idx, v1Idx,
+                CSTR_TIMES_IDX | cmp, int2uint(n), v0Idx, v1Idx,
                 v2Idx, NULL, NULL, NULL
                 });
     }
@@ -302,7 +306,7 @@ void GenAlgo::postedLinear(const std::vector<Monom>& poly, TComparisonType cmp, 
         d_polyCpy = pushPolyToGPU(h_polyCpyStart, poly.size() * 2);
 
         mCstrs.insert(mCstrs.end(), {
-                        (CSTR_LINEAR_IDX << 3) | cmp, d_polyCpy, poly.size(), v0Idx,
+                        CSTR_LINEAR_IDX | cmp, d_polyCpy, poly.size(), v0Idx,
                         NULL, NULL, NULL, NULL
                         });
         delete[] h_polyCpyStart;
@@ -328,29 +332,28 @@ void GenAlgo::parallelTask() {
 
     mDestructor.acquire();
     srand(time(NULL));
-    for ( ; ; ) {
+
+    while (!mbQuacodeThreadFinished) {
         int * population = nullptr;
         size_t *results = nullptr;
         size_t resultsSize = 0;
 
-
-        if (mbQuacodeThreadFinished) break;
-
         if (mDomChanged) {
+            mDomaine.acquire();
             pushDomToGPU(mVars.curDom, mVars.next * 2);
+            memcpy(mVars.savedDom, mVars.curDom, mVars.next * 2);
+            mDomaine.release();
         }
 
-        population = initPopulation(256, mVars.next);
+        population = initPopulation(1024, mVars.next);
 
-        doTheMagic(population, 256, mVars.next, 1000);
-        results = getResults(population, 256, mVars.next, &resultsSize);
+        doTheMagic(population, 1024, mVars.next, 1000);
+        results = getResults(population, 1024, mVars.next, &resultsSize);
 
         for (size_t i = 0; i < resultsSize; ++i) {
             OSTREAM << results[i] << ", ";
         }
         OSTREAM << std::endl;
-
-        Gecode::Support::Thread::sleep(300);
     }
 
 

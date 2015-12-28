@@ -13,16 +13,16 @@ typedef bool (*cstrFuncPtr)(uintptr_t *, int *);
 #define CSTR_MAX_CSTR   128
 #define CSTR_MAX_POLY   1024
 
-#define CSTR_EQ_IDX     0x0
-#define CSTR_AND_IDX    0x1
-#define CSTR_OR_IDX     0x2
-#define CSTR_IMP_IDX    0x3
-#define CSTR_XOR_IDX    0x4
-#define CSTR_PLUS_IDX   0x5
-#define CSTR_TIMES_IDX  0x6
-#define CSTR_LINEAR_IDX 0x7
+#define CSTR_EQ_IDX     (0x0 << 3)
+#define CSTR_AND_IDX    (0x1 << 3)
+#define CSTR_OR_IDX     (0x2 << 3)
+#define CSTR_IMP_IDX    (0x3 << 3)
+#define CSTR_XOR_IDX    (0x4 << 3)
+#define CSTR_PLUS_IDX   (0x5 << 3)
+#define CSTR_TIMES_IDX  (0x6 << 3)
+#define CSTR_LINEAR_IDX (0x7 << 3)
 
-#define BLOCK_SIZE  128
+#define BLOCK_SIZE  32
 #define CURAND_SEED 42
 
 #define OpAnd(__p0, __v0, __p1, __v1)                                           \

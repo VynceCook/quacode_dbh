@@ -56,6 +56,7 @@ class GenAlgo : public AsyncAlgo {
         TVarType type[GEN_MAX_VAR];
         int dom[2 * GEN_MAX_VAR];
         int curDom[2 * GEN_MAX_VAR];
+        int savedDom[2 * GEN_MAX_VAR];
 
         size_t  next;
 
@@ -70,6 +71,7 @@ class GenAlgo : public AsyncAlgo {
     bool mbQuacodeThreadFinished;
     /// Mutex to block the destructor
     Gecode::Support::Mutex mDestructor;
+    Gecode::Support::Mutex mDomaine;
     /// Stores the number of variables of the binder
     int     mNbVars;
     int     mNbBinderVars;

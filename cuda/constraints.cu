@@ -28,6 +28,9 @@ CUDA_DEVICE __constant__ size_t     cstrPoly[CSTR_MAX_POLY];
 
 CUDA_DEVICE              curandState_t *cstrRandStates = nullptr;
 
+// Constraint function pointer are stored in this array
+// Ths index of every fonction can be found by doing "CSTR_TYPE | CMP_TYPE"
+// example : cstrTable[CSTR_PLUS_IDX | CMP_EQ] = &cstrPlusEQ
 CUDA_DEVICE cstrFuncPtr     cstrTable[64] = {
         &cstrEq,       NULL,          NULL,          NULL,
         NULL,          NULL,          NULL,          NULL,
@@ -119,6 +122,13 @@ CUDA_HOST   int *   initPopulation(size_t popSize, size_t indSize) {
     return d_pop;
 }
 
+/**
+ * Call the kernel wich does the evolution of the population
+ * @param pop population that will evolve
+ * @param popSize size of the population
+ * @param indSize size of each individual
+ * @param gen number of generation
+ */
 CUDA_HOST   void    doTheMagic(int * pop, size_t popSize, size_t indSize, size_t gen) {
     dim3 grid, block;
 
@@ -132,6 +142,17 @@ CUDA_HOST   void    doTheMagic(int * pop, size_t popSize, size_t indSize, size_t
     CCR(cudaGetLastError());
 }
 
+/**
+ * Call the kernel that reduce the population on a vector of data. This vector
+ * contains the number of time every possible value of each variable occures
+ * in the population.
+ *
+ * @param pop population to reduce
+ * @param popSize size of the population
+ * @param indSize size of each individual
+ * @param rezSize size of the returned array
+ * @result array containing the result
+ */
 CUDA_HOST   size_t*    getResults(int * pop, size_t popSize, size_t indSize, size_t * resSize) {
     dim3 grid, block;
     static size_t * d_res=  nullptr;
@@ -198,7 +219,7 @@ CUDA_GLOBAL void    doTheMagicKernel(int * pop, size_t popSize, size_t indSize, 
     size_t gtid = blockIdx.x * blockDim.x + threadIdx.x;
     int old_fitness, cur_fitness;
     int * indiv = pop + (gtid * indSize); // points at the first element of our current individual
-    int * child = new int[indSize];       // candidate for the next generation
+    int child[CSTR_MAX_VAR];       // candidate for the next generation
     int mut_var = 0;                      // Mutated variable
 
     old_fitness = cstrValidate(indiv);
@@ -270,9 +291,14 @@ CUDA_DEVICE int cstrValidate(int * c) {
         }
     }
 
-    return(satisfied);
+    return satisfied;
 }
 
+/**
+* Every possible combinaison of constraint
+* @param data array containing the needed information of the constraint
+* @param c candidat to test against the constraint
+*/
 CUDA_DEVICE bool cstrEq(uintptr_t * data, int * c) {
     size_t v0 = (size_t) data[0];
     int    val = uint2int((unsigned int) data[1]);
