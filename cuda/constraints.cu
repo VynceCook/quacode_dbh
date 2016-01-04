@@ -26,7 +26,7 @@ CUDA_DEVICE __constant__ size_t     cstrPoly[CSTR_MAX_POLY];
                          size_t     cstrVarNumber = 0;
                          size_t     cstrDomSize = 0;
 
-CUDA_DEVICE              curandState_t *cstrRandStates = nullptr;
+CUDA_DEVICE              curandState_t cstrRandStates[CSTR_MAX_POP];
 
 // Constraint function pointer are stored in this array
 // Ths index of every fonction can be found by doing "CSTR_TYPE | CMP_TYPE"
@@ -106,16 +106,16 @@ CUDA_HOST void pushCstrToGPU(uintptr_t * cstrs, size_t size) {
  * @return initialized population
  */
 CUDA_HOST   int *   initPopulation(size_t popSize, size_t indSize) {
+    const size_t BlockSize = 32;
     dim3 grid, block;
     int * d_pop;
-    curandState_t *state;
 
-    block = dim3(BLOCK_SIZE);
-    grid = dim3((popSize + BLOCK_SIZE - 1)/ BLOCK_SIZE);
+    assert(popSize <= CSTR_MAX_POP);
+
+    block = dim3(BlockSize);
+    grid = dim3((popSize + BlockSize - 1)/ BlockSize);
 
     CCR(cudaMalloc((void**)&d_pop, sizeof(int) * popSize * indSize));
-    CCR(cudaMalloc((void**)&state, sizeof(curandState_t) * popSize));
-    CCR(cudaMemcpyToSymbol(cstrRandStates, &state, sizeof(curandState_t*)));
     initPopulationKernel<<<grid, block>>>(d_pop, popSize, indSize);
     CCR(cudaGetLastError());
 
@@ -131,12 +131,14 @@ CUDA_HOST   int *   initPopulation(size_t popSize, size_t indSize) {
  */
 CUDA_HOST   void    doTheMagic(int * pop, size_t popSize, size_t indSize, size_t gen) {
     dim3 grid, block;
+    const size_t BlockSize = 8;
 
     assert(pop != nullptr);
+    assert(popSize <= CSTR_MAX_POP);
 
     //TODO set block and grid size more effectivelly
-    block = dim3(BLOCK_SIZE);
-    grid = dim3((popSize + BLOCK_SIZE - 1)/ BLOCK_SIZE);
+    block = dim3(BlockSize);
+    grid = dim3((popSize + BlockSize - 1)/ BlockSize);
 
     doTheMagicKernel<<<grid, block>>>(pop, popSize, indSize, gen);
     CCR(cudaGetLastError());
@@ -175,7 +177,7 @@ CUDA_HOST   size_t*    getResults(int * pop, size_t popSize, size_t indSize, siz
         CCR(cudaMalloc((void**)&d_res, sizeof(size_t) * domSize));
     }
 
-    getResultsKernel<<<256, 32>>>(pop, popSize, indSize, cstrDomSize, d_res);
+    getResultsKernel<<<cstrDomSize / 256, 256>>>(pop, popSize, indSize, cstrDomSize, d_res);
     CCR(cudaGetLastError());
     CCR(cudaFree((void*)pop));
 
@@ -194,16 +196,20 @@ CUDA_HOST   size_t*    getResults(int * pop, size_t popSize, size_t indSize, siz
  * @param indSize size of an an individual
  */
 CUDA_GLOBAL void    initPopulationKernel(int * popPtr, size_t popSize, size_t indSize) {
-    size_t gtid = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t      gtid = blockIdx.x * blockDim.x + threadIdx.x;
+    int         localInd[CSTR_MAX_VAR];
+    curandState localState;
 
-    curand_init(CURAND_SEED, gtid, 0, &cstrRandStates[gtid]);
+    curand_init(CURAND_SEED, gtid, 0, &localState);
 
     if (gtid < popSize){
         for (int i = 0; i<indSize; ++i){
-            popPtr[indSize * gtid + i] = CurandInterval(curand(&cstrRandStates[gtid]), cstrDom[2 * i], cstrDom[(2 * i) + 1]);
+            localInd[i] = CurandInterval(curand(&localState), cstrDom[2 * i], cstrDom[(2 * i) + 1]);
             // Variable i is in [cstrDom[2i], cstrDom[2i + 1]]
         }
+        memcpy(popPtr + (indSize * gtid), localInd, indSize * sizeof(int));
     }
+    cstrRandStates[gtid] = localState;
 }
 
 /**
@@ -217,6 +223,7 @@ CUDA_GLOBAL void    initPopulationKernel(int * popPtr, size_t popSize, size_t in
  */
 CUDA_GLOBAL void    doTheMagicKernel(int * pop, size_t popSize, size_t indSize, size_t gen) {
     size_t gtid = blockIdx.x * blockDim.x + threadIdx.x;
+    curandState localState = cstrRandStates[gtid];
     int old_fitness, cur_fitness;
     int * indiv = pop + (gtid * indSize); // points at the first element of our current individual
     int child[CSTR_MAX_VAR];       // candidate for the next generation
@@ -230,8 +237,8 @@ CUDA_GLOBAL void    doTheMagicKernel(int * pop, size_t popSize, size_t indSize, 
 
     if (gtid < popSize){
         for (int epoch = 0; epoch < gen && old_fitness > 0; ++epoch){
-            mut_var = CurandInterval(curand(&cstrRandStates[gtid]), 0, indSize - 1);
-            child[mut_var] = CurandInterval(curand(&cstrRandStates[gtid]), cstrDom[2 * mut_var], cstrDom[(2 * mut_var) + 1]);
+            mut_var = CurandInterval(curand(&localState), 0, indSize - 1);
+            child[mut_var] = CurandInterval(curand(&localState), cstrDom[2 * mut_var], cstrDom[(2 * mut_var) + 1]);
             cur_fitness = cstrValidate(child);
             if (cur_fitness < old_fitness){
                 // We save the child
@@ -244,6 +251,8 @@ CUDA_GLOBAL void    doTheMagicKernel(int * pop, size_t popSize, size_t indSize, 
             }
         }
     }
+
+    cstrRandStates[gtid] = localState;
 }
 
 /**

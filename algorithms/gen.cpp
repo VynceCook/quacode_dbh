@@ -345,10 +345,10 @@ void GenAlgo::parallelTask() {
             mDomaine.release();
         }
 
-        population = initPopulation(1024, mVars.next);
+        population = initPopulation(8192, mVars.next);
 
-        doTheMagic(population, 1024, mVars.next, 1000);
-        results = getResults(population, 1024, mVars.next, &resultsSize);
+        doTheMagic(population, 8192, mVars.next, 1000);
+        results = getResults(population, 8192, mVars.next, &resultsSize);
 
         for (size_t i = 0; i < resultsSize; ++i) {
             OSTREAM << results[i] << ", ";
