@@ -35,6 +35,7 @@ cudaStream_t             cstrStreamType;
 cudaStream_t             cstrStreamQuan;
 cudaStream_t             cstrStreamData;
 cudaStream_t             cstrStreamDomMap;
+cudaStream_t             cstrStreamKernel[CSTR_NB_STREAM];
 
 // Constraint function pointer are stored in this array
 // Ths index of every fonction can be found by doing "CSTR_TYPE | CMP_TYPE"
@@ -64,6 +65,30 @@ CUDA_DEVICE cstrFuncPtr     cstrTable[64] = {
         &cstrLinearNQ, &cstrLinearEQ, &cstrLinearLQ, &cstrLinearLE,
         &cstrLinearGQ, &cstrLinearGR, NULL,          NULL
 };
+
+CUDA_HOST   void initStreams() {
+    CCR(cudaStreamCreate(&cstrStreamPoly));
+    CCR(cudaStreamCreate(&cstrStreamType));
+    CCR(cudaStreamCreate(&cstrStreamQuan));
+    CCR(cudaStreamCreate(&cstrStreamData));
+    CCR(cudaStreamCreate(&cstrStreamDomMap));
+
+    for (size_t i =0; i < CSTR_NB_STREAM; ++i) {
+        CCR(cudaStreamCreate(&cstrStreamKernel[i]));
+    }
+}
+
+CUDA_HOST   void destroyStreams() {
+    CCR(cudaStreamDestroy(cstrStreamPoly));
+    CCR(cudaStreamDestroy(cstrStreamType));
+    CCR(cudaStreamDestroy(cstrStreamQuan));
+    CCR(cudaStreamDestroy(cstrStreamData));
+    CCR(cudaStreamDestroy(cstrStreamDomMap));
+
+    for (size_t i =0; i < CSTR_NB_STREAM; ++i) {
+        CCR(cudaStreamDestroy(cstrStreamKernel[i]));
+    }
+}
 
 CUDA_HOST   size_t pushPolyToGPU(size_t * poly, size_t size) {
     size_t next = cstrPolyNext;
@@ -118,11 +143,12 @@ CUDA_HOST void pushCstrToGPU(uintptr_t * cstrs, size_t size) {
 CUDA_HOST   void   initPopulation(size_t popSize) {
     const size_t BlockSize = 64;
     dim3 grid, block;
+    size_t popPerStream = popSize / CSTR_NB_STREAM;
 
     assert(popSize <= CSTR_MAX_POP);
 
     block = dim3(BlockSize);
-    grid = dim3((popSize + BlockSize - 1)/ BlockSize);
+    grid = dim3((popSize + BlockSize - 1)/ (BlockSize * CSTR_NB_STREAM));
 
     if (cstrPopulation == nullptr) {
         cstrPopulationSize = popSize;
@@ -134,8 +160,15 @@ CUDA_HOST   void   initPopulation(size_t popSize) {
         CCR(cudaMalloc((void**)&cstrPopulation, sizeof(int) * cstrPopulationSize * cstrVarNumber));
     }
 
-    initPopulationKernel<<<grid, block>>>(cstrPopulation, cstrPopulationSize, cstrVarNumber);
-    CCR(cudaGetLastError());
+    for (size_t i = 0; i < 8; ++i) {
+        initPopulationKernel<<<grid, block, 0, cstrStreamKernel[i]>>>(
+            cstrPopulation + i * popPerStream,
+            popPerStream,
+            cstrVarNumber
+        );
+
+        CCR(cudaGetLastError());
+    }
 }
 
 /**
@@ -148,6 +181,7 @@ CUDA_HOST   void   initPopulation(size_t popSize) {
 CUDA_HOST   void    doTheMagic(size_t gen) {
     dim3 grid, block;
     const size_t BlockSize = 8;
+    size_t popPerStream = cstrPopulationSize / CSTR_NB_STREAM;
 
     assert(cstrPopulation != nullptr);
 
@@ -158,8 +192,14 @@ CUDA_HOST   void    doTheMagic(size_t gen) {
     CCR(cudaStreamSynchronize(cstrStreamData));
     CCR(cudaStreamSynchronize(cstrStreamPoly));
 
-    doTheMagicKernel<<<grid, block>>>(cstrPopulation, cstrPopulationSize, cstrVarNumber, gen);
-    CCR(cudaGetLastError());
+    for (size_t i = 0; i < CSTR_NB_STREAM; ++i) {
+        doTheMagicKernel<<<grid, block, 0, cstrStreamKernel[i]>>>(
+            cstrPopulation + i * popPerStream,
+            popPerStream,
+            cstrVarNumber,
+            gen);
+        CCR(cudaGetLastError());
+    }
 }
 
 /**
@@ -189,7 +229,12 @@ CUDA_HOST   void    getResults(size_t** res, size_t * resSize) {
         CCR(cudaMalloc((void**)&d_res, sizeof(size_t) * domSize));
     }
 
-    getResultsKernel<<<cstrDomSize / 256, 256, 0, cstrStreamDomMap>>>(cstrPopulation, cstrPopulationSize, cstrVarNumber, cstrDomSize, d_res);
+    CCR(cudaStreamSynchronize(cstrStreamDomMap));
+    for (size_t i = 0; i < CSTR_NB_STREAM; ++i) {
+        CCR(cudaStreamSynchronize(cstrStreamKernel[i]));
+    }
+
+    getResultsKernel<<<cstrDomSize / 256, 256>>>(cstrPopulation, cstrPopulationSize, cstrVarNumber, cstrDomSize, d_res);
     CCR(cudaGetLastError());
 
     *res = new size_t[cstrDomSize];

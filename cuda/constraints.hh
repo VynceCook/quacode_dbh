@@ -14,6 +14,7 @@ typedef bool (*cstrFuncPtr)(uintptr_t *, int *);
 #define CSTR_MAX_POLY   1024
 #define CSTR_MAX_POP    20000
 #define CSTR_MAX_DOM    (CSTR_MAX_VAR * 128)
+#define CSTR_NB_STREAM  8
 
 #define CSTR_EQ_IDX     (0x0 << 3)
 #define CSTR_AND_IDX    (0x1 << 3)
@@ -57,6 +58,8 @@ typedef bool (*cstrFuncPtr)(uintptr_t *, int *);
  *  we have the data (2, 0, 1, 0, 0, 1, 1, 3)
  */
 
+CUDA_HOST   void    initStreams();
+CUDA_HOST   void    destroyStreams();
 
 CUDA_HOST   size_t  pushPolyToGPU(size_t * poly, size_t size);
 CUDA_HOST   void    pushVarToGPU(TVarType * type, Gecode::TQuantifier * quant, size_t size);

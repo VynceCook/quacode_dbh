@@ -328,6 +328,7 @@ void GenAlgo::parallelTask() {
     pushCstrToGPU(mCstrs.data(), mCstrs.size());
     pushVarToGPU(mVars.type, mVars.q, mVars.next);
     pushDomToGPU(mVars.curDom, mVars.next * 2);
+    initStreams();
 
 
     mDestructor.acquire();
