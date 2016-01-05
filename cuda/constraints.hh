@@ -12,7 +12,8 @@ typedef bool (*cstrFuncPtr)(uintptr_t *, int *);
 #define CSTR_MAX_VAR    512
 #define CSTR_MAX_CSTR   128
 #define CSTR_MAX_POLY   1024
-#define CSTR_MAX_POP    8192
+#define CSTR_MAX_POP    20000
+#define CSTR_MAX_DOM    (CSTR_MAX_VAR * 128)
 
 #define CSTR_EQ_IDX     (0x0 << 3)
 #define CSTR_AND_IDX    (0x1 << 3)
@@ -62,11 +63,13 @@ CUDA_HOST   void    pushVarToGPU(TVarType * type, Gecode::TQuantifier * quant, s
 CUDA_HOST   void    pushDomToGPU(int * dom, size_t size);
 CUDA_HOST   void    pushCstrToGPU(uintptr_t * cstrs, size_t size);
 
-CUDA_HOST   int *   initPopulation(size_t popSize, size_t indSize);
-CUDA_HOST   void    doTheMagic(int * pop, size_t popSize, size_t indSize, size_t gen);
-CUDA_HOST   size_t *getResults(int * pop, size_t popSize, size_t indSize, size_t * resSize);
+CUDA_HOST   void    initPopulation(size_t popSize);
+CUDA_HOST   void    doTheMagic(size_t gen);
+CUDA_HOST   void    getResults(size_t ** res, size_t * resSize);
 
-CUDA_GLOBAL void    initPopulationKernel(int * popPtr, size_t popSize, size_t indSize);
+CUDA_GLOBAL void    updateDomMapKernel(size_t domSize);
+
+CUDA_GLOBAL void    initPopulationKernel(int * pop, size_t popSize, size_t indSize);
 CUDA_GLOBAL void    doTheMagicKernel(int * pop, size_t popSize, size_t indSize, size_t gen);
 CUDA_GLOBAL void    getResultsKernel(int * pop, size_t popSize, size_t indSize, size_t domSize, size_t* results);
 

@@ -1,5 +1,4 @@
 #include <cuda/constraints.hh>
-#include <cuda/kernels.hh>
 #include <cuda/helper.hh>
 #include <string.h>
 #include <stdio.h>
@@ -20,13 +19,22 @@
 CUDA_DEVICE __constant__ uintptr_t  cstrData[CSTR_MAX_CSTR * 8] = {CSTR_VAL_512X, CSTR_VAL_512X};
 CUDA_DEVICE __constant__ TVarType   cstrType[CSTR_MAX_VAR];
 CUDA_DEVICE __constant__ Gecode::TQuantifier cstrQuan[CSTR_MAX_VAR];
-CUDA_DEVICE __constant__ int        cstrDom[CSTR_MAX_VAR];
+CUDA_DEVICE __constant__ int        cstrDom[CSTR_MAX_VAR * 2];
+CUDA_DEVICE              int        cstrDomMap[CSTR_MAX_DOM * 2];
 CUDA_DEVICE __constant__ size_t     cstrPoly[CSTR_MAX_POLY];
                          size_t     cstrPolyNext = 0;
                          size_t     cstrVarNumber = 0;
                          size_t     cstrDomSize = 0;
+                         int *      cstrPopulation = nullptr;
+                         size_t     cstrPopulationSize = 0;
 
 CUDA_DEVICE              curandState_t cstrRandStates[CSTR_MAX_POP];
+
+cudaStream_t             cstrStreamPoly;
+cudaStream_t             cstrStreamType;
+cudaStream_t             cstrStreamQuan;
+cudaStream_t             cstrStreamData;
+cudaStream_t             cstrStreamDomMap;
 
 // Constraint function pointer are stored in this array
 // Ths index of every fonction can be found by doing "CSTR_TYPE | CMP_TYPE"
@@ -61,7 +69,7 @@ CUDA_HOST   size_t pushPolyToGPU(size_t * poly, size_t size) {
     size_t next = cstrPolyNext;
     assert(next + 2 * size < CSTR_MAX_POLY);
 
-    CCR(cudaMemcpyToSymbol(cstrPoly, poly, size * sizeof(size_t), next * sizeof(size_t)));
+    CCR(cudaMemcpyToSymbolAsync(cstrPoly, poly, size * sizeof(size_t), next * sizeof(size_t), cudaMemcpyHostToDevice, cstrStreamPoly));
     cstrPolyNext += 2 * size;
 
     return next;
@@ -72,8 +80,8 @@ CUDA_HOST   void pushVarToGPU(TVarType * type, Gecode::TQuantifier * quant, size
     assert(type != nullptr);
     assert(quant != nullptr);
 
-    CCR(cudaMemcpyToSymbol(cstrType, type, size * sizeof(TVarType)));
-    CCR(cudaMemcpyToSymbol(cstrQuan, quant, size * sizeof(Gecode::TQuantifier)));
+    CCR(cudaMemcpyToSymbolAsync(cstrType, type, size * sizeof(TVarType), 0, cudaMemcpyHostToDevice, cstrStreamType));
+    CCR(cudaMemcpyToSymbolAsync(cstrQuan, quant, size * sizeof(Gecode::TQuantifier), 0, cudaMemcpyHostToDevice, cstrStreamQuan));
 
     cstrVarNumber = size;
 }
@@ -83,20 +91,22 @@ CUDA_HOST void pushDomToGPU(int * dom, size_t size) {
     assert(size == 2 * cstrVarNumber);
     assert(dom != nullptr);
 
-    CCR(cudaMemcpyToSymbol(cstrDom, dom, size * sizeof(int)));
+    CCR(cudaMemcpyToSymbol(cstrDom, dom, size * sizeof(int), 0, cudaMemcpyHostToDevice));
 
     cstrDomSize = 0;
 
     for (size_t i = 0; i < size; i += 2) {
         cstrDomSize += (dom[i + 1] - dom[i]);
     }
+
+    updateDomMapKernel<<<1,1,0, cstrStreamDomMap>>>(cstrDomSize);
 }
 
 CUDA_HOST void pushCstrToGPU(uintptr_t * cstrs, size_t size) {
     assert(size < (CSTR_MAX_CSTR * 8));
     assert(cstrs != nullptr);
 
-    CCR(cudaMemcpyToSymbol(cstrData, cstrs, size * sizeof(uintptr_t)));
+    CCR(cudaMemcpyToSymbolAsync(cstrData, cstrs, size * sizeof(uintptr_t), 0, cudaMemcpyHostToDevice, cstrStreamData));
 }
 
 /**
@@ -105,21 +115,27 @@ CUDA_HOST void pushCstrToGPU(uintptr_t * cstrs, size_t size) {
  * @param indSize number of variables in an individual
  * @return initialized population
  */
-CUDA_HOST   int *   initPopulation(size_t popSize, size_t indSize) {
-    const size_t BlockSize = 32;
+CUDA_HOST   void   initPopulation(size_t popSize) {
+    const size_t BlockSize = 64;
     dim3 grid, block;
-    int * d_pop;
 
     assert(popSize <= CSTR_MAX_POP);
 
     block = dim3(BlockSize);
     grid = dim3((popSize + BlockSize - 1)/ BlockSize);
 
-    CCR(cudaMalloc((void**)&d_pop, sizeof(int) * popSize * indSize));
-    initPopulationKernel<<<grid, block>>>(d_pop, popSize, indSize);
-    CCR(cudaGetLastError());
+    if (cstrPopulation == nullptr) {
+        cstrPopulationSize = popSize;
+        CCR(cudaMalloc((void**)&cstrPopulation, sizeof(int) * cstrPopulationSize * cstrVarNumber));
+    }
+    else if (cstrPopulationSize != popSize) {
+        cstrPopulationSize = popSize;
+        CCR(cudaFree((void*)cstrPopulation));
+        CCR(cudaMalloc((void**)&cstrPopulation, sizeof(int) * cstrPopulationSize * cstrVarNumber));
+    }
 
-    return d_pop;
+    initPopulationKernel<<<grid, block>>>(cstrPopulation, cstrPopulationSize, cstrVarNumber);
+    CCR(cudaGetLastError());
 }
 
 /**
@@ -129,18 +145,20 @@ CUDA_HOST   int *   initPopulation(size_t popSize, size_t indSize) {
  * @param indSize size of each individual
  * @param gen number of generation
  */
-CUDA_HOST   void    doTheMagic(int * pop, size_t popSize, size_t indSize, size_t gen) {
+CUDA_HOST   void    doTheMagic(size_t gen) {
     dim3 grid, block;
     const size_t BlockSize = 8;
 
-    assert(pop != nullptr);
-    assert(popSize <= CSTR_MAX_POP);
+    assert(cstrPopulation != nullptr);
 
     //TODO set block and grid size more effectivelly
     block = dim3(BlockSize);
-    grid = dim3((popSize + BlockSize - 1)/ BlockSize);
+    grid = dim3((cstrPopulationSize + BlockSize - 1)/ BlockSize);
 
-    doTheMagicKernel<<<grid, block>>>(pop, popSize, indSize, gen);
+    CCR(cudaStreamSynchronize(cstrStreamData));
+    CCR(cudaStreamSynchronize(cstrStreamPoly));
+
+    doTheMagicKernel<<<grid, block>>>(cstrPopulation, cstrPopulationSize, cstrVarNumber, gen);
     CCR(cudaGetLastError());
 }
 
@@ -155,17 +173,11 @@ CUDA_HOST   void    doTheMagic(int * pop, size_t popSize, size_t indSize, size_t
  * @param rezSize size of the returned array
  * @result array containing the result
  */
-CUDA_HOST   size_t*    getResults(int * pop, size_t popSize, size_t indSize, size_t * resSize) {
-    dim3 grid, block;
+CUDA_HOST   void    getResults(size_t** res, size_t * resSize) {
     static size_t * d_res=  nullptr;
-    size_t * h_res = nullptr;
     static size_t domSize = 0;
 
-    // TODO set block & grid size
-    block = dim3(BLOCK_SIZE);
-    grid = dim3((domSize + BLOCK_SIZE - 1)/ BLOCK_SIZE);
-
-    assert(pop != nullptr);
+    assert(cstrPopulation != nullptr);
 
     if (domSize == 0 || cstrDomSize != domSize) {
         domSize = cstrDomSize;
@@ -177,16 +189,36 @@ CUDA_HOST   size_t*    getResults(int * pop, size_t popSize, size_t indSize, siz
         CCR(cudaMalloc((void**)&d_res, sizeof(size_t) * domSize));
     }
 
-    getResultsKernel<<<cstrDomSize / 256, 256>>>(pop, popSize, indSize, cstrDomSize, d_res);
+    getResultsKernel<<<cstrDomSize / 256, 256, 0, cstrStreamDomMap>>>(cstrPopulation, cstrPopulationSize, cstrVarNumber, cstrDomSize, d_res);
     CCR(cudaGetLastError());
-    CCR(cudaFree((void*)pop));
 
-    h_res = new size_t[cstrDomSize];
+    *res = new size_t[cstrDomSize];
     *resSize = cstrDomSize;
 
-    CCR(cudaMemcpy(h_res, d_res, sizeof(size_t) * cstrDomSize, cudaMemcpyDeviceToHost));
+    CCR(cudaMemcpy(*res, d_res, sizeof(size_t) * cstrDomSize, cudaMemcpyDeviceToHost));
+}
 
-    return h_res;
+
+CUDA_GLOBAL void    updateDomMapKernel(size_t domSize) {
+    size_t gtid = blockIdx.x * blockDim.x + threadIdx.x;
+    int val = cstrDom[0];
+    size_t idx = 0;
+
+    if (gtid == 0) {
+        for (size_t i = 0; (i < domSize); ++i) {
+            assert(2 * i < CSTR_MAX_DOM);
+
+            cstrDomMap[2 * i + 0] = idx;
+            cstrDomMap[2 * i + 1] = val;
+
+            ++val;
+
+            if (val > cstrDom[2 * idx + 1]) {
+                ++idx;
+                val = cstrDom[2 * idx];
+            }
+        }
+    }
 }
 
 /**
@@ -266,22 +298,18 @@ CUDA_GLOBAL void    doTheMagicKernel(int * pop, size_t popSize, size_t indSize, 
 CUDA_GLOBAL void    getResultsKernel(int * pop, size_t popSize, size_t indSize, size_t domSize, size_t* res) {
     size_t  gtid = blockIdx.x * blockDim.x + threadIdx.x;
     size_t  sum = 0;
-    size_t  idx = 0;          // constraint's index
-    int     val = cstrDom[0]; // value to test
+    size_t  idx; // var's index
+    int     val; // value to test
 
     if (gtid < domSize) {
-        // set val to the value we want to test
-        for (size_t i = 0; (i < domSize) && (i < gtid); ++i) {
-            ++val;
-
-            if (val > cstrDom[2 * idx + 1]) {
-                ++idx;
-                val = cstrDom[2 * idx];
-            }
-        }
+        idx = cstrDomMap[2 * gtid + 0];
+        val = cstrDomMap[2 * gtid + 1];
 
         for (size_t i = 0; i < popSize; ++i) {
-            sum += (pop[i * indSize + idx] == val);
+            if (pop[i * indSize + idx] == val) {
+                ++sum;
+            }
+            // sum += (pop[i * indSize + idx] == val);
         }
         res[gtid] = sum;
     }

@@ -30,7 +30,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <algorithms/gen.hh>
-#include <cuda/kernels.hh>
+#include <cuda/constraints.hh>
 #include <cuda/helper.hh>
 #define OSTREAM std::cerr
 #define MAX_VARS_IN_INTERVAL 24
@@ -333,8 +333,9 @@ void GenAlgo::parallelTask() {
     mDestructor.acquire();
     srand(time(NULL));
 
+    int cpt = 0;
+
     while (!mbQuacodeThreadFinished) {
-        int * population = nullptr;
         size_t *results = nullptr;
         size_t resultsSize = 0;
 
@@ -345,17 +346,21 @@ void GenAlgo::parallelTask() {
             mDomaine.release();
         }
 
-        population = initPopulation(8192, mVars.next);
+        initPopulation(8192);
+        doTheMagic(1000);
+        getResults(&results, &resultsSize);
 
-        doTheMagic(population, 8192, mVars.next, 1000);
-        results = getResults(population, 8192, mVars.next, &resultsSize);
+        ++cpt;
 
-        for (size_t i = 0; i < resultsSize; ++i) {
-            OSTREAM << results[i] << ", ";
-        }
-        OSTREAM << std::endl;
+        // for (size_t i = 0; i < resultsSize; ++i) {
+        //     OSTREAM << results[i] << ", ";
+        // }
+        // OSTREAM << std::endl;
+
+        delete[] results;
     }
 
+    OSTREAM << cpt << std::endl;
 
     mDestructor.release();
     LOG(OSTREAM << "THREAD stop" << std::endl;)
