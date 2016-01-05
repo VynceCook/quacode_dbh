@@ -27,6 +27,7 @@ CUDA_DEVICE __constant__ size_t     cstrPoly[CSTR_MAX_POLY];
                          size_t     cstrDomSize = 0;
                          int *      cstrPopulation = nullptr;
                          size_t     cstrPopulationSize = 0;
+                         bool       cstrRandStatesInitialized = false;
 
 CUDA_DEVICE              curandState_t cstrRandStates[CSTR_MAX_POP];
 
@@ -148,7 +149,11 @@ CUDA_HOST   void   initPopulation(size_t popSize) {
     assert(popSize <= CSTR_MAX_POP);
 
     block = dim3(BlockSize);
-    grid = dim3((popSize + BlockSize - 1)/ (BlockSize * CSTR_NB_STREAM));
+    grid = dim3((popPerStream + BlockSize - 1)/ (BlockSize));
+
+    if (!cstrRandStatesInitialized) {
+        initRandomStates<<<grid, block>>>();
+    }
 
     if (cstrPopulation == nullptr) {
         cstrPopulationSize = popSize;
@@ -160,7 +165,7 @@ CUDA_HOST   void   initPopulation(size_t popSize) {
         CCR(cudaMalloc((void**)&cstrPopulation, sizeof(int) * cstrPopulationSize * cstrVarNumber));
     }
 
-    for (size_t i = 0; i < 8; ++i) {
+    for (size_t i = 0; i < CSTR_NB_STREAM; ++i) {
         initPopulationKernel<<<grid, block, 0, cstrStreamKernel[i]>>>(
             cstrPopulation + i * popPerStream,
             popPerStream,
@@ -187,7 +192,7 @@ CUDA_HOST   void    doTheMagic(size_t gen) {
 
     //TODO set block and grid size more effectivelly
     block = dim3(BlockSize);
-    grid = dim3((cstrPopulationSize + BlockSize - 1)/ BlockSize);
+    grid = dim3((popPerStream + BlockSize - 1)/ (BlockSize));
 
     CCR(cudaStreamSynchronize(cstrStreamData));
     CCR(cudaStreamSynchronize(cstrStreamPoly));
@@ -266,6 +271,12 @@ CUDA_GLOBAL void    updateDomMapKernel(size_t domSize) {
     }
 }
 
+CUDA_GLOBAL void    initRandomStates() {
+    size_t      gtid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    curand_init(CURAND_SEED, gtid, 0, &cstrRandStates[gtid]);
+}
+
 /**
  * Randomly creates a population of candidates to evolve
  * @param popPtr the address where the population will be stored
@@ -275,9 +286,7 @@ CUDA_GLOBAL void    updateDomMapKernel(size_t domSize) {
 CUDA_GLOBAL void    initPopulationKernel(int * popPtr, size_t popSize, size_t indSize) {
     size_t      gtid = blockIdx.x * blockDim.x + threadIdx.x;
     int         localInd[CSTR_MAX_VAR];
-    curandState localState;
-
-    curand_init(CURAND_SEED, gtid, 0, &localState);
+    curandState localState = cstrRandStates[gtid];
 
     if (gtid < popSize){
         for (int i = 0; i<indSize; ++i){

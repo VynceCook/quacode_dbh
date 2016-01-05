@@ -347,7 +347,7 @@ void GenAlgo::parallelTask() {
             mDomaine.release();
         }
 
-        initPopulation(8192);
+        initPopulation(15000);
         doTheMagic(1000);
         getResults(&results, &resultsSize);
 
@@ -362,6 +362,8 @@ void GenAlgo::parallelTask() {
     }
 
     OSTREAM << cpt << std::endl;
+
+    destroyStreams();
 
     mDestructor.release();
     LOG(OSTREAM << "THREAD stop" << std::endl;)

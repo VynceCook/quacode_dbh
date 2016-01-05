@@ -71,6 +71,7 @@ CUDA_HOST   void    doTheMagic(size_t gen);
 CUDA_HOST   void    getResults(size_t ** res, size_t * resSize);
 
 CUDA_GLOBAL void    updateDomMapKernel(size_t domSize);
+CUDA_GLOBAL void    initRandomStates();
 
 CUDA_GLOBAL void    initPopulationKernel(int * pop, size_t popSize, size_t indSize);
 CUDA_GLOBAL void    doTheMagicKernel(int * pop, size_t popSize, size_t indSize, size_t gen);
