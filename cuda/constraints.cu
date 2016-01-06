@@ -231,12 +231,12 @@ CUDA_GLOBAL void    doTheMagicKernel(int * pop, size_t popSize, size_t indSize, 
  * @param popSize number of individuals in the population
  * @param indSize individual size (how many ints)
  * @param domSize the sum of each constraint's domain size
- * @param res the result
+ * @param res number of occurencies of each variable's value
  */
 CUDA_GLOBAL void    getResultsKernel(int * pop, size_t popSize, size_t indSize, size_t domSize, size_t* res) {
     size_t  gtid = blockIdx.x * blockDim.x + threadIdx.x;
     size_t  sum = 0;
-    size_t  idx = 0;          // constraint's index
+    size_t  idx = 0;          // variable's index
     int     val = cstrDom[0]; // value to test
 
     if (gtid < domSize) {
