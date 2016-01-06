@@ -12,17 +12,20 @@ typedef bool (*cstrFuncPtr)(uintptr_t *, int *);
 #define CSTR_MAX_VAR    512
 #define CSTR_MAX_CSTR   128
 #define CSTR_MAX_POLY   1024
+#define CSTR_MAX_POP    20000
+#define CSTR_MAX_DOM    (CSTR_MAX_VAR * 128)
+#define CSTR_NB_STREAM  8
 
-#define CSTR_EQ_IDX     0x0
-#define CSTR_AND_IDX    0x1
-#define CSTR_OR_IDX     0x2
-#define CSTR_IMP_IDX    0x3
-#define CSTR_XOR_IDX    0x4
-#define CSTR_PLUS_IDX   0x5
-#define CSTR_TIMES_IDX  0x6
-#define CSTR_LINEAR_IDX 0x7
+#define CSTR_EQ_IDX     (0x0 << 3)
+#define CSTR_AND_IDX    (0x1 << 3)
+#define CSTR_OR_IDX     (0x2 << 3)
+#define CSTR_IMP_IDX    (0x3 << 3)
+#define CSTR_XOR_IDX    (0x4 << 3)
+#define CSTR_PLUS_IDX   (0x5 << 3)
+#define CSTR_TIMES_IDX  (0x6 << 3)
+#define CSTR_LINEAR_IDX (0x7 << 3)
 
-#define BLOCK_SIZE  128
+#define BLOCK_SIZE  1
 #define CURAND_SEED 42
 
 #define OpAnd(__p0, __v0, __p1, __v1)                                           \
@@ -55,17 +58,22 @@ typedef bool (*cstrFuncPtr)(uintptr_t *, int *);
  *  we have the data (2, 0, 1, 0, 0, 1, 1, 3)
  */
 
+CUDA_HOST   void    initStreams();
+CUDA_HOST   void    destroyStreams();
 
 CUDA_HOST   size_t  pushPolyToGPU(size_t * poly, size_t size);
 CUDA_HOST   void    pushVarToGPU(TVarType * type, Gecode::TQuantifier * quant, size_t size);
 CUDA_HOST   void    pushDomToGPU(int * dom, size_t size);
 CUDA_HOST   void    pushCstrToGPU(uintptr_t * cstrs, size_t size);
 
-CUDA_HOST   int *   initPopulation(size_t popSize, size_t indSize);
-CUDA_HOST   void    doTheMagic(int * pop, size_t popSize, size_t indSize, size_t gen);
-CUDA_HOST   size_t *getResults(int * pop, size_t popSize, size_t indSize, size_t * resSize);
+CUDA_HOST   void    initPopulation(size_t popSize);
+CUDA_HOST   void    doTheMagic(size_t gen);
+CUDA_HOST   void    getResults(size_t ** res, size_t * resSize);
 
-CUDA_GLOBAL void    initPopulationKernel(int * popPtr, size_t popSize, size_t indSize);
+CUDA_GLOBAL void    updateDomMapKernel(size_t domSize);
+CUDA_GLOBAL void    initRandomStates();
+
+CUDA_GLOBAL void    initPopulationKernel(int * pop, size_t popSize, size_t indSize);
 CUDA_GLOBAL void    doTheMagicKernel(int * pop, size_t popSize, size_t indSize, size_t gen);
 CUDA_GLOBAL void    getResultsKernel(int * pop, size_t popSize, size_t indSize, size_t domSize, size_t* results);
 
