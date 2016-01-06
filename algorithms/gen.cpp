@@ -35,6 +35,7 @@
 #define OSTREAM std::cerr
 #define MAX_VARS_IN_INTERVAL 24
 #define MUTATION_THRESHOLD 1.0
+#define N_WORST_ELEMENTS 5
 
 // #define DEBUG
 
@@ -344,6 +345,44 @@ void GenAlgo::parallelTask() {
 
         doTheMagic(population, 256, mVars.next, 1000);
         results = getResults(population, 256, mVars.next, &resultsSize);
+
+		// sorts the N_WORST_ELEMENTS worst elements
+		// DEBUG The results-sorting section starts here...
+		size_t * worst_elems = new size_t[N_WORST_ELEMENTS];
+		int offset     = 0;
+		int domainSize = 0;
+		size_t tmp     = 0;
+
+		for (int i = 0; i < mNbVars; ++i){ // for each var
+			domainSize = mVars.curDom[2 * i + 1] - mVars.curDom[2 * i] + 1;
+
+			for (int j = 0; j < N_WORST_ELEMENTS; ++j){
+				worst_elems[j] = mVars.curDom[2 * i] - 1; // indicates an empty cell
+			}
+
+			// gets the worst values for this var (in function of the corresponding results)
+			for (int j = 0; j < domainSize; ++j){
+				if (worst_elems[N_WORST_ELEMENTS - 1] < mVars.curDom[2 * i] || results[j + offset] > results[worst_elems[N_WORST_ELEMENTS - 1] + offset]){
+					worst_elems[N_WORST_ELEMENTS - 1] = j;
+					for (int k = N_WORST_ELEMENTS - 2; k >= 0 && (worst_elems[k] < mVars.curDom[2 * i] | results[worst_elems[k + 1] + offset] > results[worst_elems[k] + offset]); --k){
+						tmp = worst_elems[k];
+						worst_elems[k] = worst_elems[k + 1];
+						worst_elems[k + 1] = tmp;
+					}
+
+				}
+			}
+			
+			// swap to get the N_WORST_ELEMENTS first elements at the end
+// TODO check why swap causes a segfault
+//			for (int j = 0; j < N_WORST_ELEMENTS; ++j){
+//				swap(i, worst_elems[j], domainSize - 1 - j);
+//			}
+
+			offset += domainSize;
+		}
+
+		// DEBUG ... and ends here
 
         for (size_t i = 0; i < resultsSize; ++i) {
             OSTREAM << results[i] << ", ";
