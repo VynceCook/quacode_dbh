@@ -17,10 +17,11 @@ printf "\rRunning ${2} instances : [${_fill// /#}${_empty// /-}] ${_progress}%%"
 }
 
 let max=100
+tmpfile=$(mktemp)
 
-if [[ $# -ne 1 ]]
+if [[ $# -ne 2 ]]
 then
-	echo -e "Usage : ${0} <algo_id>"
+	echo -e "Usage : ${0} <algo_id> <size>"
 	echo -e
 	echo -e "Allowed algo_ids are :"
 	echo -e "\t0 -> logger"
@@ -30,13 +31,13 @@ then
 	exit
 fi
 
-echo "propagator;branchers;runtime;solutions;propagations;nodes;failures;restarts;no-goods;peak depth" > results_gen.txt
+echo "propagator;branchers;runtime;solutions;propagations;nodes;failures;restarts;no-goods;peak depth" > ${tmpfile}
 
 for (( i = 0; i <= $max; i++ )); do
     ProgressBar ${i} ${max}
-    ../baker -algo ${1} 2> /dev/null | cut -d ':' -f 2 | grep -i "[0-9]" | sed -e 's/^ *\([0-9.]\+\).*/\1;/' | tr -d '\n' >> results_gen.txt && echo "" >> results_gen.txt
+    ../baker -algo ${1} -n ${2} 2> /dev/null | cut -d ':' -f 2 | grep -i "[0-9]" | sed -e 's/^ *\([0-9.]\+\).*/\1;/' | tr -d '\n' >> ${tmpfile} && echo "" >> ${tmpfile}
 done
 echo
-./compute_results.py results_gen.txt ${1}
-mv results_gen.txt results_${1}_gen.txt
+./compute_results.py ${tmpfile} ${1} ${2}
+mv ${tmpfile} results_${1}_${2}_gen.txt
 echo -ne "\nDone !\n"

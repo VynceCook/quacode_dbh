@@ -3,8 +3,8 @@
 from sys import argv, exit
 from time import strftime, gmtime
 
-if len(argv) != 3:
-    print("Usage : %s <results_file> <algo_id>" % argv[0])
+if len(argv) != 4:
+    print("Usage : %s <results_file> <algo_id> <size>" % argv[0])
     exit()
 
 with open(argv[1], 'r') as f:
@@ -32,11 +32,11 @@ with open(argv[1], 'r') as f:
 
         print(datanames[i] + ' :')
         print("\tmin : %f\n\tmax : %f\n\tmoy : %f" % (my_min[i], my_max[i], my_moy[i]))
-    
+
     # Saves the results in a dated file in csv format
     # First lines describes the minimal values, the second on describes the
     # maximal and the third the average
-    with open(strftime("condensed_" + argv[2] + "_%y-%m-%d_%H:%M:%S", gmtime()) + ".txt", 'w') as res_file:
+    with open(strftime("condensed_" + argv[2] + "_" + argv[3] + "_%y-%m-%d_%H:%M:%S", gmtime()) + ".txt", 'w') as res_file:
         res_file.write(';'.join(datanames) + '\n')
         res_file.write(';'.join([ str(i) for i in my_min ]) + '\n')
         res_file.write(';'.join([ str(i) for i in my_max ]) + '\n')
