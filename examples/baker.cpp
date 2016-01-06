@@ -80,7 +80,7 @@ public:
         : Options(s),
         _printStrategy("-printStrategy","Print strategy",false),
         _n("-n", "Value used to restrict the domain of w1 in order to make the problem harder", n0),
-        _algo("-algo", "Number of the algorithm to use : 0 - Logger, 1 - Montecarlo, 2 - GenAlgo", 0)
+        _algo("-algo", "Number of the algorithm to use : 0 - Logger, 1 - Montecarlo, 2 - GenAlgo, 3 - Dumb", 0)
         {
             add(_printStrategy);
             add(_n);
@@ -209,6 +209,10 @@ int main(int argc, char* argv[])
 
         case 2:
             opt.aAlgo = new GenAlgo();
+            break;
+
+        case 3:
+            opt.aAlgo = new DumbAlgorithm();
             break;
     }
 
