@@ -26,6 +26,7 @@ then
 	echo -e "\t0 -> logger"
 	echo -e "\t1 -> montecarlo"
 	echo -e "\t2 -> genetic"
+	echo -e "\t3 -> dumb"
 	exit
 fi
 
