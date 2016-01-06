@@ -35,6 +35,7 @@ for (( i = 0; i <= $max; i++ )); do
     ProgressBar ${i} ${max}
     ../baker -algo ${1} 2> /dev/null | cut -d ':' -f 2 | grep -i "[0-9]" | sed -e 's/^ *\([0-9.]\+\).*/\1;/' | tr -d '\n' >> results_gen.txt && echo "" >> results_gen.txt
 done
+echo
 ./compute_results.py results_gen.txt ${1}
 mv results_gen.txt results_${1}_gen.txt
 echo -ne "\nDone !\n"
