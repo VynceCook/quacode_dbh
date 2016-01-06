@@ -219,8 +219,10 @@ CUDA_HOST   void    doTheMagic(size_t gen) {
  * @result array containing the result
  */
 CUDA_HOST   void    getResults(size_t** res, size_t * resSize) {
+    const size_t BlockSize = 128;
     static size_t * d_res=  nullptr;
     static size_t domSize = 0;
+    dim3 grid, block;
 
     assert(cstrPopulation != nullptr);
 
@@ -234,12 +236,15 @@ CUDA_HOST   void    getResults(size_t** res, size_t * resSize) {
         CCR(cudaMalloc((void**)&d_res, sizeof(size_t) * domSize));
     }
 
+    grid = dim3((domSize + BlockSize - 1)/ (BlockSize));
+    block = dim3(BlockSize);
+
     CCR(cudaStreamSynchronize(cstrStreamDomMap));
     for (size_t i = 0; i < CSTR_NB_STREAM; ++i) {
         CCR(cudaStreamSynchronize(cstrStreamKernel[i]));
     }
 
-    getResultsKernel<<<cstrDomSize / 256, 256>>>(cstrPopulation, cstrPopulationSize, cstrVarNumber, cstrDomSize, d_res);
+    getResultsKernel<<<grid, block>>>(cstrPopulation, cstrPopulationSize, cstrVarNumber, cstrDomSize, d_res);
     CCR(cudaGetLastError());
 
     *res = new size_t[cstrDomSize];
@@ -353,7 +358,7 @@ CUDA_GLOBAL void    getResultsKernel(int * pop, size_t popSize, size_t indSize, 
     size_t  gtid = blockIdx.x * blockDim.x + threadIdx.x;
     size_t  sum = 0;
     size_t  idx = 0;          // variable's index
-    int     val = cstrDom[0]; // value to test
+    int     val = 0; // value to test
 
     if (gtid < domSize) {
         idx = cstrDomMap[2 * gtid + 0];
