@@ -3,14 +3,15 @@
 from sys import argv, exit
 
 if len(argv) != 2:
-    print("Usage : %s <fichier_de_résultats" % argv[0])
+    print("Usage : %s <fichier_de_résultats>" % argv[0])
     exit()
 
 with open(argv[1], 'r') as f:
     data = []
     datanames = f.readline().split(';')[2:7] # Consumes the first line
     for line in f:
-        data.append([ float(i) for i in line.split(';')[2:7] ])
+        if line:
+            data.append([ float(i) for i in line.split(';')[2:7] ])
 
     for i in range(5):
         my_sum = 0
