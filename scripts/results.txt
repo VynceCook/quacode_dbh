@@ -1,0 +1,18 @@
+******* No help ******
+
+Baker Problem
+Loading problem
+
+Initial
+	propagators: 7
+	branchers:   3
+
+Summary
+	runtime:      0.319 (319.134 ms)
+	solutions:    1
+	propagations: 134934
+	nodes:        14350
+	failures:     2398
+	restarts:     0
+	no-goods:     0
+	peak depth:   10
