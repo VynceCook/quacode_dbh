@@ -325,7 +325,7 @@ void GenAlgo::parallelTask() {
 
     LOG(OSTREAM << "THREAD start" << std::endl;)
 
-    OSTREAM << "Post constraints and variables to GPU" << std::endl;
+    LOG(OSTREAM << "Post constraints and variables to GPU" << std::endl;)
     pushCstrToGPU(mCstrs.data(), mCstrs.size());
     pushVarToGPU(mVars.type, mVars.q, mVars.next);
     pushDomToGPU(mVars.curDom, mVars.next * 2);
@@ -353,7 +353,7 @@ void GenAlgo::parallelTask() {
         getResults(&results, &resultsSize);
 
         ++cpt;
-
+//*
 		// sorts the N_WORST_ELEMENTS worst elements
 		// DEBUG The results-sorting section starts here...
 		size_t * worst_elems = new size_t[N_WORST_ELEMENTS];
@@ -363,6 +363,10 @@ void GenAlgo::parallelTask() {
 
 		for (int i = 0; i < mNbVars; ++i){ // for each var
 			domainSize = mVars.curDom[2 * i + 1] - mVars.curDom[2 * i] + 1;
+
+            if ((domainSize < N_WORST_ELEMENTS) || (mVars.idxInBinder[i] == -1)) {
+                continue;
+            }
 
 			for (int j = 0; j < N_WORST_ELEMENTS; ++j){
 				worst_elems[j] = mVars.curDom[2 * i] - 1; // indicates an empty cell
@@ -380,18 +384,18 @@ void GenAlgo::parallelTask() {
 
 				}
 			}
-			
+
 			// swap to get the N_WORST_ELEMENTS first elements at the end
 // TODO check why swap causes a segfault
-//			for (int j = 0; j < N_WORST_ELEMENTS; ++j){
-//				swap(i, worst_elems[j], domainSize - 1 - j);
-//			}
+			for (int j = 0; j < N_WORST_ELEMENTS; ++j){
+				swap(mVars.idxInBinder[i], worst_elems[j], domainSize - 1 - j);
+			}
 
 			offset += domainSize;
 		}
 
 		// DEBUG ... and ends here
-
+//*/
         // for (size_t i = 0; i < resultsSize; ++i) {
         //     OSTREAM << results[i] << ", ";
         // }
@@ -400,7 +404,7 @@ void GenAlgo::parallelTask() {
         delete[] results;
     }
 
-    OSTREAM << cpt << std::endl;
+    LOG(OSTREAM << cpt << std::endl;)
 
     destroyStreams();
 
