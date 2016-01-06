@@ -26,3 +26,4 @@ for (( i = 0; i < $max; i++ )); do
     ../baker | cut -d ':' -f 2 | grep -i "[0-9]" | sed -e 's/^ *\([0-9.]\+\).*/\1;/' | tr -d '\n' >> results_gen.txt && echo "" >> results_gen.txt
 done
 echo -ne "\nDone !\n"
+./compute_results.py results_gen.txt
