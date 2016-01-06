@@ -167,7 +167,7 @@ CUDA_HOST   void   initPopulation(size_t popSize) {
 
     for (size_t i = 0; i < CSTR_NB_STREAM; ++i) {
         initPopulationKernel<<<grid, block, 0, cstrStreamKernel[i]>>>(
-            cstrPopulation + i * popPerStream,
+            cstrPopulation + i * popPerStream * cstrVarNumber,
             popPerStream,
             cstrVarNumber
         );
@@ -199,7 +199,7 @@ CUDA_HOST   void    doTheMagic(size_t gen) {
 
     for (size_t i = 0; i < CSTR_NB_STREAM; ++i) {
         doTheMagicKernel<<<grid, block, 0, cstrStreamKernel[i]>>>(
-            cstrPopulation + i * popPerStream,
+            cstrPopulation + i * popPerStream * cstrVarNumber,
             popPerStream,
             cstrVarNumber,
             gen);

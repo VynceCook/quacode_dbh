@@ -352,11 +352,15 @@ void GenAlgo::parallelTask() {
         doTheMagic(1000);
         getResults(&results, &resultsSize);
 
-        ++cpt;
+        // for (size_t i = 0; i < resultsSize; ++i) {
+        //     OSTREAM << results[i] << ", ";
+        // }
+        // OSTREAM << std::endl;
+        // ++cpt;
 //*
 		// sorts the N_WORST_ELEMENTS worst elements
 		// DEBUG The results-sorting section starts here...
-		size_t * worst_elems = new size_t[N_WORST_ELEMENTS];
+		size_t worst_elems[N_WORST_ELEMENTS];
 		int offset     = 0;
 		int domainSize = 0;
 		size_t tmp     = 0;
@@ -396,10 +400,6 @@ void GenAlgo::parallelTask() {
 
 		// DEBUG ... and ends here
 //*/
-        // for (size_t i = 0; i < resultsSize; ++i) {
-        //     OSTREAM << results[i] << ", ";
-        // }
-        // OSTREAM << std::endl;
 
         delete[] results;
     }
