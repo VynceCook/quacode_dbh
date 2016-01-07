@@ -94,6 +94,8 @@ GenAlgo::GenAlgo() : AsyncAlgo() {
     mNbBinderVars = 0;
     mLastChoice = 0;
     mDomChanged = false;
+    mPopulationSize = 16000;
+    mNbEpoch = 100;
 }
 
 GenAlgo::~GenAlgo() {
@@ -348,8 +350,8 @@ void GenAlgo::parallelTask() {
             mDomaine.release();
         }
 
-        initPopulation(15000);
-        doTheMagic(1000);
+        initPopulation(mPopulationSize);
+        doTheMagic(mNbEpoch);
         getResults(&results, &resultsSize);
 
         // for (size_t i = 0; i < resultsSize; ++i) {

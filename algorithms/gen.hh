@@ -81,6 +81,9 @@ class GenAlgo : public AsyncAlgo {
     VarDescArray            mVars;
 	std::vector<uintptr_t>  mCstrs;
 
+    size_t  mPopulationSize;
+    size_t  mNbEpoch;
+
     // Restaure the domain of var in the interval ]from, to]
     void restaureDomaines(int from, int to);
 
