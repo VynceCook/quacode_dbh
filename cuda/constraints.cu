@@ -153,6 +153,7 @@ CUDA_HOST   void   initPopulation(size_t popSize) {
 
     if (!cstrRandStatesInitialized) {
         initRandomStates<<<grid, block>>>();
+        cstrRandStatesInitialized = true;
     }
 
     if (cstrPopulation == nullptr) {
