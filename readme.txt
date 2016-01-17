@@ -66,6 +66,8 @@ cmake by invoking
   cmake -DGECODE_SRC=path_to_Gecode_src -DGECODE_BIN=path_to_Gecode_bin .
 in the toplevel QuacodeDBH source directory.
 
+If you wish to use the cuda based algorithms you have to add -DQUACODE_USE_CUDA=true.
+
 If you want to separate the sources from the binaries (which
 is often a good choice), you can create another directory
 for QuacodeDBH binaries. Then go inside and invoke:
@@ -244,4 +246,3 @@ and it is acquired before the MonteCarlo starts and in the
 desctructor. So, when Quacode will call the destructor, it will
 forced to wait for the end of the MonteCarlo algorithm when
 the mutex is released.
-
