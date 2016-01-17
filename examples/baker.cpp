@@ -125,11 +125,6 @@ public:
         if (!opt.printStrategy()) strategyMethod(0); // disable build and print strategy
 
         using namespace Int;
-        aAlgo.newAuxVar("o1",TYPE_INT,-opt.n(),opt.n());
-        aAlgo.newAuxVar("o2",TYPE_INT,-opt.n(),opt.n());
-        aAlgo.newAuxVar("o3",TYPE_INT,-opt.n(),opt.n());
-        aAlgo.newAuxVar("o4",TYPE_INT,-opt.n(),opt.n());
-        aAlgo.newAuxVar("o5",TYPE_INT,-opt.n(),opt.n());
         aAlgo.newVar(EXISTS,"w1",TYPE_INT,1,opt.n());
         aAlgo.newVar(EXISTS,"w2",TYPE_INT,1,opt.n());
         aAlgo.newVar(EXISTS,"w3",TYPE_INT,1,opt.n());
@@ -141,6 +136,11 @@ public:
         aAlgo.newVar(EXISTS,"c3",TYPE_INT,-1,1);
         aAlgo.newVar(EXISTS,"c4",TYPE_INT,-1,1);
         aAlgo.newVar(EXISTS,"c5",TYPE_INT,-1,1);
+        aAlgo.newAuxVar("o1",TYPE_INT,-opt.n(),opt.n());
+        aAlgo.newAuxVar("o2",TYPE_INT,-opt.n(),opt.n());
+        aAlgo.newAuxVar("o3",TYPE_INT,-opt.n(),opt.n());
+        aAlgo.newAuxVar("o4",TYPE_INT,-opt.n(),opt.n());
+        aAlgo.newAuxVar("o5",TYPE_INT,-opt.n(),opt.n());
 
         IntVarArgs w(*this,5,1,opt.n());
         IntVar f(*this,1,opt.n());
