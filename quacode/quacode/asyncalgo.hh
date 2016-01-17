@@ -38,26 +38,13 @@
 #include <gecode/support.hh>
 #include <gecode/int.hh>
 #include <quacode/qcsp.hh>
+#include <quacode/quacodetypes.hh>
 
 // Forward declaration
 namespace Gecode { namespace Int { namespace Branch {
     template<int n, bool min> class QViewValuesOrderBrancher;
     class QPosValuesOrderChoice;
 }}}
-
-#define TYPE_BOOL  0
-#define TYPE_INT   1
-// Information on type of a variable
-typedef unsigned int TVarType;
-
-#define CMP_NQ  0
-#define CMP_EQ  1
-#define CMP_LQ  2
-#define CMP_LE  3
-#define CMP_GQ  4
-#define CMP_GR  5
-// Information on comparison operator
-typedef unsigned int TComparisonType;
 
 // Structure which represents an interval
 struct Interval {

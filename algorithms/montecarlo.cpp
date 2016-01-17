@@ -30,7 +30,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <algorithms/montecarlo.hh>
-#define OSTREAM std::cout
+#define OSTREAM std::cerr
 
 MonteCarlo::MonteCarlo() : AsyncAlgo(), mbQuacodeThreadFinished(false) {
     mNbVars = 0;
