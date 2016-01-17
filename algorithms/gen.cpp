@@ -359,7 +359,6 @@ void GenAlgo::parallelTask() {
         // ++cpt;
 //*
 		// sorts the N_WORST_ELEMENTS worst elements
-		// DEBUG The results-sorting section starts here...
 		size_t worst_elems[N_WORST_ELEMENTS];
 		int offset     = 0;
 		int domainSize = 0;
@@ -390,16 +389,12 @@ void GenAlgo::parallelTask() {
 			}
 
 			// swap to get the N_WORST_ELEMENTS first elements at the end
-// TODO check why swap causes a segfault
 			for (int j = 0; j < N_WORST_ELEMENTS; ++j){
 				swap(mVars.idxInBinder[i], worst_elems[j], domainSize - 1 - j);
 			}
 
 			offset += domainSize;
 		}
-
-		// DEBUG ... and ends here
-//*/
 
         delete[] results;
     }

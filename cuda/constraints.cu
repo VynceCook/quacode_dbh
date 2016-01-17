@@ -190,7 +190,6 @@ CUDA_HOST   void    doTheMagic(size_t gen) {
 
     assert(cstrPopulation != nullptr);
 
-    //TODO set block and grid size more effectivelly
     block = dim3(BlockSize);
     grid = dim3((popPerStream + BlockSize - 1)/ (BlockSize));
 
